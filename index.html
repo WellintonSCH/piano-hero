@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Hero</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="fileWarning" hidden>
+  ⚠️ <strong>Você abriu este arquivo direto (duplo-clique).</strong>
+  O navegador bloqueia o som do piano e o MIDI nesse modo.
+  Dê duplo-clique em <code>iniciar.bat</code> nesta pasta (ou rode
+  <code>python -m http.server 8000</code> e abra <code>http://localhost:8000</code>).
+</div>
+<script>
+  if (location.protocol === 'file:') {
+    document.getElementById('fileWarning').hidden = false;
+  }
+</script>
+
+<div id="app">
+
+  <header id="hud">
+    <div class="hud-item">
+      <span class="hud-label">Pontos</span>
+      <strong id="score">0</strong>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">Combo</span>
+      <strong id="combo">0</strong>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">Precisão</span>
+      <strong id="accuracy">—</strong>
+    </div>
+    <div class="hud-item" id="songLabelItem" hidden>
+      <span class="hud-label">Fase</span>
+      <strong id="songLabel">—</strong>
+    </div>
+    <div class="hud-spacer"></div>
+    <div class="hud-controls">
+      <label class="toggle">
+        <input type="checkbox" id="hintToggle" checked>
+        <span>Dica no teclado</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="effectsToggle" checked>
+        <span>Efeitos</span>
+      </label>
+      <label class="toggle" title="Corta o som do piano do PC (metrônomo continua audível) — pra jogar num piano externo de verdade">
+        <input type="checkbox" id="muteToggle">
+        <span>Silenciar piano</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="latencyToggle">
+        <span>Medir latência</span>
+      </label>
+      <span id="difficultyItem">
+        <select id="difficulty" title="Conjunto de notas (modo livre)">
+          <option value="white">Só teclas brancas</option>
+          <option value="scale">Escala de Dó</option>
+          <option value="all">Com sustenidos</option>
+        </select>
+      </span>
+      <span id="speedItem" hidden>
+        <select id="speed" title="Velocidade da música (fase)">
+          <option value="0.5">Velocidade: 50%</option>
+          <option value="0.75">Velocidade: 75%</option>
+          <option value="1" selected>Velocidade: 100%</option>
+          <option value="1.25">Velocidade: 125%</option>
+          <option value="1.5">Velocidade: 150%</option>
+        </select>
+      </span>
+      <span id="waitItem" hidden>
+        <label class="toggle">
+          <input type="checkbox" id="waitToggle">
+          <span>Modo espera</span>
+        </label>
+      </span>
+      <span id="metronomeItem" hidden>
+        <label class="toggle">
+          <input type="checkbox" id="metronomeToggle">
+          <span>Metrônomo</span>
+        </label>
+        <span id="metronomeDot" class="metronome-dot" aria-hidden="true"></span>
+      </span>
+      <span id="demoItem" hidden>
+        <label class="toggle" title="A música toca sozinha, no tempo certo, pra você ouvir/ver a melodia antes de tentar">
+          <input type="checkbox" id="demoToggle">
+          <span>Demonstração</span>
+        </label>
+      </span>
+      <button id="pauseBtn" type="button">⏸ Pausar</button>
+      <button id="restart" type="button">Reiniciar</button>
+      <button id="menuBtn" type="button">Menu</button>
+    </div>
+  </header>
+
+  <div id="latencyPanel" class="latency-panel" hidden>
+    <div class="latency-stats" id="latencyStats">Nenhuma amostra ainda — toque notas para coletar dados.</div>
+    <div class="latency-actions">
+      <button id="latencyExportJSON" type="button">Exportar JSON</button>
+      <button id="latencyExportCSV" type="button">Exportar CSV</button>
+      <button id="latencyClear" type="button" class="ghost">Limpar amostras</button>
+    </div>
+  </div>
+
+  <div id="stage">
+    <canvas id="game"></canvas>
+    <div id="overlay">
+
+      <div class="overlay-card" id="screen-home">
+        <h1>Piano Hero</h1>
+        <p>As notas caem e <strong>esperam</strong> na linha. Sem pressa: toque a nota certa, na ordem certa.</p>
+        <ul class="how">
+          <li><b>Teclado do PC:</b> Z X C V B N M (1ª oitava) · Q W E R T Y U I (2ª oitava) · linha de cima (S D, G H J, 2 3, 5 6 7) = teclas pretas</li>
+          <li><b>Mouse/toque:</b> clique nas teclas desenhadas</li>
+          <li><b>Piano MIDI:</b> conecte e toque — detecção automática</li>
+        </ul>
+        <div class="menu-buttons">
+          <button id="btnLevels" type="button" class="primary">🎵 Fases</button>
+          <button id="btnFree" type="button">🎲 Modo Livre</button>
+        </div>
+        <p class="midi-status" id="midiStatus">MIDI: verificando…</p>
+        <p class="midi-status" id="pianoStatus">🎹 Som do piano carrega ao começar a jogar.</p>
+      </div>
+
+      <div class="overlay-card wide" id="screen-levels" hidden>
+        <h1>Escolha uma fase</h1>
+        <p>Complete uma fase pra destravar a próxima.</p>
+        <div class="level-list" id="levelList"></div>
+        <button id="btnBackHome" type="button" class="ghost">Voltar</button>
+      </div>
+
+      <div class="overlay-card" id="screen-pause" hidden>
+        <h1>⏸ Pausado</h1>
+        <p>O jogo está parado. Continue quando quiser.</p>
+        <div class="menu-buttons">
+          <button id="btnResume" type="button" class="primary">▶ Continuar</button>
+          <button id="btnRestartFromPause" type="button">Reiniciar</button>
+          <button id="btnMenuFromPause" type="button" class="ghost">Menu</button>
+        </div>
+      </div>
+
+      <div class="overlay-card wide" id="screen-complete" hidden>
+        <h1 id="completeTitle">Fase completa!</h1>
+        <div class="complete-stats" id="completeStats"></div>
+        <div id="completeReport"></div>
+        <div class="menu-buttons">
+          <button id="btnNextLevel" type="button" class="primary">Próxima fase ▶</button>
+          <button id="btnRetryLevel" type="button">Repetir</button>
+          <button id="btnToLevelsFromComplete" type="button" class="ghost">Fases</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer id="tips">
+    <span id="feedback" class="feedback"></span>
+    <p class="midi-status" id="midiRaw">Última msg MIDI: nenhuma ainda.</p>
+  </footer>
+
+</div>
+
+<script src="latency.js"></script>
+<script src="audio.js"></script>
+<script src="notes.js"></script>
+<script src="songs.js"></script>
+<script src="render.js"></script>
+<script src="input.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
