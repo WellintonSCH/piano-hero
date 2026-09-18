@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(Start-Process -FilePath \"C:\\\\Python313\\\\python.exe\" -ArgumentList \"-m\",\"http.server\",\"8000\" -WorkingDirectory \"C:\\\\Users\\\\Wellinton\\\\Documents\\\\UTFPR\\\\2026-2\\\\TCC2\\\\v1\" -WindowStyle Hidden; Start-Sleep -Seconds 2; \\(Invoke-WebRequest -Uri \"http://localhost:8000/index.html\" -UseBasicParsing\\).StatusCode)",
-      "PowerShell(Set-Location *)",
-      "PowerShell(Get-Process *)"
-    ]
-  }
-}
