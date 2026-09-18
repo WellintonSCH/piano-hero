@@ -83,8 +83,11 @@
     el.demoItem = document.getElementById('demoItem');
     el.songLabel = document.getElementById('songLabel');
     el.songLabelItem = document.getElementById('songLabelItem');
+    el.demoBadge = document.getElementById('demoBadge');
     el.menuBtn = document.getElementById('menuBtn');
     el.pauseBtn = document.getElementById('pauseBtn');
+    el.optionsBtn = document.getElementById('optionsBtn');
+    el.optionsPanel = document.getElementById('optionsPanel');
 
     el.latencyToggle = document.getElementById('latencyToggle');
     el.latencyPanel = document.getElementById('latencyPanel');
@@ -147,6 +150,14 @@
       el.canvas.focus();
     });
 
+    el.optionsBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setOptionsOpen(el.optionsPanel.hidden);
+    });
+    // Clicar dentro do painel não deve fechá-lo (só clicar fora, ou nos botões abaixo).
+    el.optionsPanel.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', function () { setOptionsOpen(false); });
+
     el.pauseBtn.addEventListener('click', togglePause);
 
     document.getElementById('btnResume').addEventListener('click', resumeGame);
@@ -162,10 +173,15 @@
       showHome();
     });
 
-    // Esc pausa/retoma a partida em andamento — não interfere com as teclas de nota
-    // (ver KEY_MAP em input.js), que nunca usam Escape.
+    // Esc fecha o menu de opções se estiver aberto; senão, pausa/retoma a partida em
+    // andamento — não interfere com as teclas de nota (ver KEY_MAP em input.js), que
+    // nunca usam Escape.
     window.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && (state.running || state.paused)) {
+      if (e.key !== 'Escape') return;
+      if (!el.optionsPanel.hidden) {
+        e.preventDefault();
+        setOptionsOpen(false);
+      } else if (state.running || state.paused) {
         e.preventDefault();
         togglePause();
       }
@@ -215,6 +231,7 @@
       state.demoMode = el.demoToggle.checked;
       progress.prefs.demo = state.demoMode;
       saveProgressState();
+      updateDemoBadge();
     });
 
     el.latencyToggle.addEventListener('change', function () {
@@ -256,6 +273,7 @@
     el.screenComplete.hidden = name !== 'complete';
     el.screenPause.hidden = name !== 'pause';
     el.overlay.hidden = false;
+    setOptionsOpen(false);   // evita o menu de opções ficar flutuando por cima da tela nova
   }
 
   function showHome() { showScreen('home'); }
@@ -296,6 +314,13 @@
     startSong(PH.songs[idx]);
   }
 
+  /* ---------------- menu de opções ---------------- */
+
+  function setOptionsOpen(open) {
+    el.optionsPanel.hidden = !open;
+    el.optionsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
   /* ---------------- pausa ---------------- */
 
   function togglePause() {
@@ -308,6 +333,7 @@
     state.running = false;
     state.paused = true;
     updatePauseButton();
+    updateDemoBadge();
     showScreen('pause');
   }
 
@@ -316,6 +342,7 @@
     state.paused = false;
     state.running = true;
     updatePauseButton();
+    updateDemoBadge();
     el.overlay.hidden = true;
   }
 
@@ -603,6 +630,7 @@
       // Demonstração é só uma prévia — não é uma tentativa de verdade, então não abre
       // a tela de "fase completa" nem grava progresso/pontuação.
       state.running = false;
+      updateDemoBadge();
       showFeedback('Demonstração concluída — desative e tente você mesmo!', 'info');
     } else {
       finishSong();
@@ -637,12 +665,23 @@
     while (state.cursor < timeline.length && state.songTime >= timeline[state.cursor].time) {
       playDemoChord(timeline[state.cursor]);
       state.cursor++;
+      // Crítico: sem isso, `state.targetMidis` (o que `syncSongNotes`/render.js desenham
+      // como "a nota de agora") fica travado no primeiro acorde pra sempre, porque
+      // `onSongNote()` — que normalmente atualiza isso — é ignorado no modo demonstração.
+      state.targetMidis = state.cursor < timeline.length ? timeline[state.cursor].midis.slice() : [];
     }
     checkSongEnd();
   }
 
-  /** Toca e "segura" visualmente todas as notas de um acorde da timeline, sozinho. */
+  /**
+   * Toca e "segura" visualmente todas as notas de um acorde da timeline, sozinho.
+   * Solta um pouco antes do próximo acorde (`durMs`) e com decaimento curto (`release`
+   * proporcional à duração da nota, não o padrão de 0,25s) — numa passagem rápida de
+   * semicolcheias, um decaimento longo demais embola uma nota na próxima, deixando a
+   * demonstração soar "grudada"/borrada em vez de articulada.
+   */
   function playDemoChord(chord) {
+    var release = Math.min(0.25, chord.dur * 0.4);
     chord.midis.forEach(function (midi) {
       PH.audio.startNote(midi, 1);
       holdKey(midi, true);
@@ -652,7 +691,7 @@
     var durMs = Math.max(chord.dur * 1000 - 20, 40);
     setTimeout(function () {
       chord.midis.forEach(function (midi) {
-        PH.audio.stopNote(midi);
+        PH.audio.stopNote(midi, release);
         releaseKey(midi);
       });
     }, durMs);
@@ -892,6 +931,12 @@
       var played = Math.min(state.cursor + 1, songTotal);
       el.songLabel.textContent = state.song.title + ' — ' + played + '/' + songTotal;
     }
+    updateDemoBadge();
+  }
+
+  /** Mostra o selo "Demonstração — só observe" enquanto a música toca sozinha. */
+  function updateDemoBadge() {
+    el.demoBadge.hidden = !(state.mode === 'song' && state.demoMode && state.running);
   }
 
   /** Atualiza o painel de instrumentação de latência (latency.js) — só quando visível. */

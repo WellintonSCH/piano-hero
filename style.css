@@ -28,7 +28,10 @@ body {
 
 #app {
   width: 100%;
-  max-width: 940px;
+  /* 1200px (era 940px): o teclado desenhado passou de 2 pra 5 oitavas (ver notes.js),
+     então a área de jogo ficou mais larga pra cada tecla continuar com um tamanho
+     razoável em telas grandes, em vez de espremer 36 teclas brancas no espaço de 15. */
+  max-width: 1200px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -96,6 +99,19 @@ body {
 
 .hud-spacer { flex: 1 1 auto; }
 
+.demo-badge {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b0d17;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+.demo-badge[hidden] { display: none !important; }
+
 .hud-controls {
   display: flex;
   align-items: center;
@@ -143,6 +159,57 @@ select, button {
 }
 
 button:hover, select:hover { border-color: var(--accent); }
+
+/* ---------- Menu de opções ---------- */
+
+.options-wrap { position: relative; }
+
+.icon-btn { font-size: 14px; }
+
+.options-btn[aria-expanded="true"],
+#optionsBtn[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.options-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: max-content;
+  min-width: 240px;
+  max-width: calc(100vw - 48px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .5);
+}
+
+.options-panel[hidden] { display: none !important; }
+
+.options-panel .toggle { color: var(--text); }
+
+.options-sep {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.options-row-label {
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.options-panel select { width: 100%; }
 
 /* ---------- Painel de latência ---------- */
 

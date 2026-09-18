@@ -39,59 +39,72 @@
       <span class="hud-label">Fase</span>
       <strong id="songLabel">—</strong>
     </div>
+    <span id="demoBadge" class="demo-badge" hidden>▶ Demonstração — só observe</span>
     <div class="hud-spacer"></div>
     <div class="hud-controls">
-      <label class="toggle">
-        <input type="checkbox" id="hintToggle" checked>
-        <span>Dica no teclado</span>
-      </label>
-      <label class="toggle">
-        <input type="checkbox" id="effectsToggle" checked>
-        <span>Efeitos</span>
-      </label>
-      <label class="toggle" title="Corta o som do piano do PC (metrônomo continua audível) — pra jogar num piano externo de verdade">
-        <input type="checkbox" id="muteToggle">
-        <span>Silenciar piano</span>
-      </label>
-      <label class="toggle">
-        <input type="checkbox" id="latencyToggle">
-        <span>Medir latência</span>
-      </label>
-      <span id="difficultyItem">
-        <select id="difficulty" title="Conjunto de notas (modo livre)">
-          <option value="white">Só teclas brancas</option>
-          <option value="scale">Escala de Dó</option>
-          <option value="all">Com sustenidos</option>
-        </select>
-      </span>
-      <span id="speedItem" hidden>
-        <select id="speed" title="Velocidade da música (fase)">
-          <option value="0.5">Velocidade: 50%</option>
-          <option value="0.75">Velocidade: 75%</option>
-          <option value="1" selected>Velocidade: 100%</option>
-          <option value="1.25">Velocidade: 125%</option>
-          <option value="1.5">Velocidade: 150%</option>
-        </select>
-      </span>
-      <span id="waitItem" hidden>
-        <label class="toggle">
-          <input type="checkbox" id="waitToggle">
-          <span>Modo espera</span>
-        </label>
-      </span>
-      <span id="metronomeItem" hidden>
-        <label class="toggle">
-          <input type="checkbox" id="metronomeToggle">
-          <span>Metrônomo</span>
-        </label>
-        <span id="metronomeDot" class="metronome-dot" aria-hidden="true"></span>
-      </span>
-      <span id="demoItem" hidden>
-        <label class="toggle" title="A música toca sozinha, no tempo certo, pra você ouvir/ver a melodia antes de tentar">
-          <input type="checkbox" id="demoToggle">
-          <span>Demonstração</span>
-        </label>
-      </span>
+      <div class="options-wrap">
+        <button id="optionsBtn" type="button" class="icon-btn" aria-haspopup="true" aria-expanded="false">
+          ⚙ Opções
+        </button>
+        <div id="optionsPanel" class="options-panel" hidden role="menu">
+          <label class="toggle">
+            <input type="checkbox" id="hintToggle" checked>
+            <span>Dica no teclado</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="effectsToggle" checked>
+            <span>Efeitos</span>
+          </label>
+          <label class="toggle" title="Corta o som do piano do PC (metrônomo continua audível) — pra jogar num piano externo de verdade">
+            <input type="checkbox" id="muteToggle">
+            <span>Silenciar piano</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="latencyToggle">
+            <span>Medir latência</span>
+          </label>
+
+          <div class="options-sep" id="difficultyItem">
+            <span class="options-row-label">Dificuldade (modo livre)</span>
+            <select id="difficulty" title="Conjunto de notas (modo livre)">
+              <option value="white">Só teclas brancas</option>
+              <option value="scale">Escala de Dó</option>
+              <option value="all">Com sustenidos</option>
+            </select>
+          </div>
+
+          <div class="options-sep" id="speedItem" hidden>
+            <span class="options-row-label">Velocidade (fase)</span>
+            <select id="speed" title="Velocidade da música (fase)">
+              <option value="0.5">50%</option>
+              <option value="0.75">75%</option>
+              <option value="1" selected>100%</option>
+              <option value="1.25">125%</option>
+              <option value="1.5">150%</option>
+            </select>
+          </div>
+
+          <div id="waitItem" hidden>
+            <label class="toggle">
+              <input type="checkbox" id="waitToggle">
+              <span>Modo espera</span>
+            </label>
+          </div>
+          <div id="metronomeItem" hidden>
+            <label class="toggle">
+              <input type="checkbox" id="metronomeToggle">
+              <span>Metrônomo</span>
+              <span id="metronomeDot" class="metronome-dot" aria-hidden="true"></span>
+            </label>
+          </div>
+          <div id="demoItem" hidden>
+            <label class="toggle" title="A música toca sozinha, no tempo certo, pra você ouvir/ver a melodia antes de tentar">
+              <input type="checkbox" id="demoToggle">
+              <span>Demonstração</span>
+            </label>
+          </div>
+        </div>
+      </div>
       <button id="pauseBtn" type="button">⏸ Pausar</button>
       <button id="restart" type="button">Reiniciar</button>
       <button id="menuBtn" type="button">Menu</button>

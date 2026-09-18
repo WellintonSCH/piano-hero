@@ -7,10 +7,13 @@
  * Faixa gravada vs. faixa jogável: só existem 25 amostras (Dó3–Dó5), mas o teclado
  * desenhado (notes.js) cobre 5 oitavas pra caber músicas com melodia aguda e baixo grave
  * de verdade (ex.: Cânone em Ré). Fora de Dó3–Dó5, startNote() toca a amostra real mais
- * próxima com `playbackRate` ajustado (a técnica de "esticar o disco" — um semitom de
- * diferença por vez) em vez de tocar a nota exata: decisão deliberada, aceitando alguma
- * distorção de timbre nos extremos em troca de manter o som de piano real (em vez de cair
- * pro oscilador sintetizado) na maior parte da faixa estendida.
+ * próxima com `playbackRate` ajustado (a técnica de "esticar o disco") em vez de tocar a
+ * nota exata: decisão deliberada, aceitando alguma distorção de timbre nos extremos em
+ * troca de manter o som de piano real na maior parte da faixa estendida. Além de uma
+ * oitava de esticamento (`MAX_SHIFT_SEMITONES`), porém, a amostra fica caricata demais
+ * (grave demais/lento demais ou agudo demais/rápido demais) — nesses casos extremos
+ * cai pro oscilador sintetizado, que soa mais limpo que uma amostra distorcida ao ponto
+ * de parecer outro instrumento.
  *
  * Sustain: startNote() começa a tocar e SEGURA (decaimento natural da amostra) até
  * stopNote() ser chamado — isso espelha o par nota-pressionada/nota-solta que input.js
@@ -45,11 +48,18 @@ window.PianoHero = window.PianoHero || {};
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
-  /** A amostra real mais próxima de `midi`, dentro da faixa de fato gravada. */
+  var MAX_SHIFT_SEMITONES = 12;   // acima de 1 oitava de esticamento, a amostra fica artificial demais
+
+  /**
+   * A amostra real mais próxima de `midi`, dentro da faixa de fato gravada — ou `null`
+   * se `midi` está longe demais (mais de uma oitava) pra esticar sem soar sintético
+   * demais, caso em que `startNote()` cai pro oscilador (mais limpo que uma amostra
+   * super distorcida nos extremos do teclado de 5 oitavas).
+   */
   function nearestSampleMidi(midi) {
-    if (midi < SAMPLE_MIN) return SAMPLE_MIN;
-    if (midi > SAMPLE_MAX) return SAMPLE_MAX;
-    return midi;
+    if (midi >= SAMPLE_MIN && midi <= SAMPLE_MAX) return midi;
+    var clamped = midi < SAMPLE_MIN ? SAMPLE_MIN : SAMPLE_MAX;
+    return Math.abs(midi - clamped) <= MAX_SHIFT_SEMITONES ? clamped : null;
   }
 
   function ensure() {
@@ -125,7 +135,7 @@ window.PianoHero = window.PianoHero || {};
     var t = ctx.currentTime;
     var vol = volume === undefined ? 1 : volume;
     var sampleMidi = nearestSampleMidi(midi);
-    var buf = buffers[sampleMidi];
+    var buf = sampleMidi !== null ? buffers[sampleMidi] : null;
 
     var gain = ctx.createGain();
     gain.connect(instrumentGain);

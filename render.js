@@ -24,7 +24,9 @@ window.PianoHero = window.PianoHero || {};
   /** Recalcula tamanho lógico (CSS px) + escala de retina e a geometria do piano. */
   function resize() {
     var cssW = Math.max(320, canvas.parentNode.clientWidth);
-    var cssH = Math.round(Math.min(600, Math.max(400, cssW * 0.66)));
+    // Tetos maiores que antes (era 600 / 0.66): o teclado tem 5 oitavas agora (ver
+    // notes.js), então precisa de mais altura pra cada tecla branca não ficar espremida.
+    var cssH = Math.round(Math.min(680, Math.max(420, cssW * 0.72)));
     var dpr = window.devicePixelRatio || 1;
 
     canvas.width = Math.round(cssW * dpr);
@@ -38,7 +40,9 @@ window.PianoHero = window.PianoHero || {};
   function buildLayout(W, H) {
     var whites = PH.notes.WHITE;
     var whiteW = W / whites.length;
-    var pianoH = Math.min(150, Math.round(H * 0.28));
+    // Teto maior que antes (era 150): compensa as teclas brancas mais estreitas do
+    // teclado de 5 oitavas com teclas mais altas, mais fáceis de mirar no toque/clique.
+    var pianoH = Math.min(190, Math.round(H * 0.32));
     var pianoY = H - pianoH;
     var blackW = whiteW * 0.6;
     var blackH = pianoH * 0.6;
