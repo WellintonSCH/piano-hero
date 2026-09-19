@@ -390,6 +390,75 @@ button.ghost:hover { color: var(--text); }
 
 #overlay[hidden] { display: none !important; }
 
+/* ---------- Barra de progresso (voltar/avançar na música) ---------- */
+
+.scrubber {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 4px;
+}
+
+.scrub-time {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-2);
+  min-width: 34px;
+  text-align: center;
+}
+
+.scrub-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.scrub-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.scrub-fill {
+  position: absolute;
+  left: 0;
+  height: 6px;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  pointer-events: none;
+}
+
+.scrub-thumb {
+  position: absolute;
+  left: 0%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--accent-2);
+  box-shadow: var(--shadow-sm);
+  transition: transform .12s ease;
+  pointer-events: none;
+}
+
+.scrub-track:hover .scrub-thumb { transform: scale(1.15); }
+
+.scrubber.scrubbing .scrub-thumb {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 6px rgba(111, 155, 255, .18);
+}
+
 .overlay-card {
   width: 100%;
   max-width: 460px;

@@ -34,6 +34,9 @@
     timeline: [],          // modo song: [{ midi, time, dur }] em segundos
     cursor: 0,             // modo song: índice da próxima nota a resolver
     songTime: 0,           // modo song: relógio da música (negativo durante o preparo)
+    songDuration: 0,       // modo song: duração total da timeline (fim da última nota), em segundos
+    demoGen: 0,            // incrementa a cada reset()/seekTo() — invalida setTimeouts velhos da demonstração
+    scrubbing: false,      // true enquanto o jogador arrasta a barra de progresso (suspende o relógio)
     speed: 1,              // multiplicador de velocidade (afeta o BPM efetivo da fase)
     waitMode: false,       // modo fase: true = a música pausa na nota até o jogador acertar
     metronome: false,      // modo fase: true = clique de referência em cada tempo (semínima)
@@ -84,6 +87,12 @@
     el.songLabel = document.getElementById('songLabel');
     el.songLabelItem = document.getElementById('songLabelItem');
     el.demoBadge = document.getElementById('demoBadge');
+    el.scrubberItem = document.getElementById('scrubberItem');
+    el.scrubTrack = document.getElementById('scrubTrack');
+    el.scrubFill = document.getElementById('scrubFill');
+    el.scrubThumb = document.getElementById('scrubThumb');
+    el.scrubCurrent = document.getElementById('scrubCurrent');
+    el.scrubTotal = document.getElementById('scrubTotal');
     el.menuBtn = document.getElementById('menuBtn');
     el.pauseBtn = document.getElementById('pauseBtn');
     el.optionsBtn = document.getElementById('optionsBtn');
@@ -157,6 +166,8 @@
     // Clicar dentro do painel não deve fechá-lo (só clicar fora, ou nos botões abaixo).
     el.optionsPanel.addEventListener('click', function (e) { e.stopPropagation(); });
     document.addEventListener('click', function () { setOptionsOpen(false); });
+
+    initScrubber();
 
     el.pauseBtn.addEventListener('click', togglePause);
 
@@ -314,6 +325,63 @@
     startSong(PH.songs[idx]);
   }
 
+  /* ---------------- barra de progresso (voltar/avançar na música) ---------------- */
+
+  function timeFromPointer(e) {
+    var rect = el.scrubTrack.getBoundingClientRect();
+    var frac = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0;
+    frac = Math.max(0, Math.min(1, frac));
+    return frac * state.songDuration;
+  }
+
+  /**
+   * Arrastar/clicar na barra usa Pointer Events (unifica mouse/toque/pen) com
+   * `setPointerCapture` — assim o arrasto continua "preso" na barra mesmo se o ponteiro
+   * saltar pra fora dela no meio do gesto (comum quando o mouse se move rápido).
+   * `state.scrubbing` suspende o relógio automático da música enquanto isso (ver
+   * `updateSong()`) pra não competir com a posição que o jogador está escolhendo.
+   */
+  function initScrubber() {
+    var dragging = false;
+
+    function begin(e) {
+      if (state.mode !== 'song' || !state.songDuration) return;
+      dragging = true;
+      state.scrubbing = true;
+      el.scrubberItem.classList.add('scrubbing');
+      el.scrubTrack.setPointerCapture(e.pointerId);
+      seekTo(timeFromPointer(e));
+    }
+
+    function move(e) {
+      if (!dragging) return;
+      seekTo(timeFromPointer(e));
+    }
+
+    function end(e) {
+      if (!dragging) return;
+      dragging = false;
+      state.scrubbing = false;
+      el.scrubberItem.classList.remove('scrubbing');
+      try { el.scrubTrack.releasePointerCapture(e.pointerId); } catch (err) { /* já liberado */ }
+    }
+
+    el.scrubTrack.addEventListener('pointerdown', begin);
+    el.scrubTrack.addEventListener('pointermove', move);
+    el.scrubTrack.addEventListener('pointerup', end);
+    el.scrubTrack.addEventListener('pointercancel', end);
+
+    // Roda do mouse sobre o palco ou a barra também volta/avança (passo fixo por notch).
+    var WHEEL_STEP = 1.0;   // segundos por notch da roda
+    function onWheel(e) {
+      if (state.mode !== 'song' || !state.songDuration) return;
+      e.preventDefault();
+      seekTo(state.songTime + (e.deltaY > 0 ? WHEEL_STEP : -WHEEL_STEP));
+    }
+    document.getElementById('stage').addEventListener('wheel', onWheel, { passive: false });
+    el.scrubberItem.addEventListener('wheel', onWheel, { passive: false });
+  }
+
   /* ---------------- menu de opções ---------------- */
 
   function setOptionsOpen(open) {
@@ -446,6 +514,7 @@
     el.metronomeItem.hidden = !isSong;
     el.demoItem.hidden = !isSong;
     el.songLabelItem.hidden = !isSong;
+    el.scrubberItem.hidden = !isSong;
   }
 
   /* ---------------- ciclo de uma partida ---------------- */
@@ -480,6 +549,7 @@
   function reset() {
     // Solta qualquer nota que ainda estivesse soando antes de trocar de fase/modo.
     Object.keys(state.held).forEach(function (midi) { PH.audio.stopNote(Number(midi)); });
+    state.demoGen++;   // invalida setTimeouts de notas da demonstração agendados antes deste reset
 
     state.held = {};
     state.flashes = {};
@@ -496,6 +566,8 @@
       state.timeline = buildTimeline(state.song);
       state.cursor = 0;
       state.songTime = -PRE_ROLL;
+      var last = state.timeline[state.timeline.length - 1];
+      state.songDuration = last ? last.time + last.dur : 0;
       // Primeiro tempo (semínima) a soar: pode ser negativo (clique de contagem, durante
       // o pré-roll) — Math.ceil garante que não pulamos o tempo 0 por erro de arredondamento.
       state.nextClick = Math.ceil(state.songTime / beatSeconds(state.song));
@@ -509,6 +581,7 @@
     }
 
     updateHUD();
+    updateScrubber();
   }
 
   /* ---------------- modo livre: fila infinita, sem tempo ---------------- */
@@ -560,6 +633,55 @@
   }
 
   /* ---------------- modo fase: linha do tempo com BPM/ticks ---------------- */
+
+  /**
+   * Salta o relógio da música pra `t` segundos (0..songDuration) — a barra de progresso
+   * (arrastar/clicar/roda do mouse) e qualquer chamada futura de "voltar a música" devem
+   * passar por aqui. Recalcula `cursor`/`targetMidis` a partir da nova posição (o primeiro
+   * acorde cujo fim ainda não passou), solta notas que estivessem soando e limpa as barras
+   * resolvidas antigas (não fazem sentido depois de um salto no tempo).
+   */
+  function seekTo(t) {
+    if (state.mode !== 'song' || !state.timeline.length) return;
+    state.songTime = Math.max(0, Math.min(t, state.songDuration));
+    state.demoGen++;   // invalida setTimeouts de notas da demonstração agendados antes do salto
+
+    Object.keys(state.held).forEach(function (midi) {
+      PH.audio.stopNote(Number(midi));
+      releaseKey(Number(midi));
+    });
+    state.resolvedBars = [];
+
+    var timeline = state.timeline;
+    var i = 0;
+    while (i < timeline.length && timeline[i].time + timeline[i].dur <= state.songTime) i++;
+    state.cursor = i;
+    state.targetMidis = i < timeline.length ? timeline[i].midis.slice() : [];
+
+    if (state.metronome) state.nextClick = Math.ceil(state.songTime / beatSeconds(state.song));
+
+    updateHUD();
+    syncSongNotes();
+    updateScrubber();
+  }
+
+  function formatTime(seconds) {
+    var s = Math.max(0, Math.round(seconds));
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+
+  /** Atualiza a posição visual da barra de progresso a partir de `state.songTime`. */
+  function updateScrubber() {
+    if (el.scrubberItem.hidden) return;
+    var duration = state.songDuration || 0;
+    var pct = duration > 0 ? Math.max(0, Math.min(1, state.songTime / duration)) * 100 : 0;
+    el.scrubFill.style.width = pct + '%';
+    el.scrubThumb.style.left = pct + '%';
+    el.scrubCurrent.textContent = formatTime(state.songTime);
+    el.scrubTotal.textContent = formatTime(duration);
+  }
 
   /**
    * Recalcula quais notas aparecem na tela e onde, a partir do relógio da música.
@@ -638,7 +760,7 @@
   }
 
   function updateSong(dt) {
-    if (!state.running) return;
+    if (!state.running || state.scrubbing) return;   // arrastando a barra: o relógio fica em pausa
     var wasNegative = state.songTime < 0;
     // Modo espera: a nota "segura" o relógio da música na própria linha de acerto até o
     // jogador tocar — o relógio nunca passa do tempo da nota ainda não resolvida, então
@@ -682,6 +804,7 @@
    */
   function playDemoChord(chord) {
     var release = Math.min(0.25, chord.dur * 0.4);
+    var gen = state.demoGen;   // ver seekTo()/reset(): se mudar antes do timeout, ele é ignorado
     chord.midis.forEach(function (midi) {
       PH.audio.startNote(midi, 1);
       holdKey(midi, true);
@@ -690,6 +813,7 @@
     if (state.effects) PH.render.burst(chord.midis[0], true);
     var durMs = Math.max(chord.dur * 1000 - 20, 40);
     setTimeout(function () {
+      if (state.demoGen !== gen) return;   // a música saltou de posição antes desse timer disparar
       chord.midis.forEach(function (midi) {
         PH.audio.stopNote(midi, release);
         releaseKey(midi);
@@ -1009,7 +1133,10 @@
     lastTime = now;
 
     update(dt, rawDt);
-    if (state.mode === 'song') syncSongNotes();
+    if (state.mode === 'song') {
+      syncSongNotes();
+      if (!state.scrubbing) updateScrubber();
+    }
     PH.render.draw(state, dt);
     requestAnimationFrame(loop);
   }
