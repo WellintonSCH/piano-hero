@@ -271,6 +271,13 @@
     el.demoToggle.checked = state.demoMode;
     PH.audio.setMuted(state.mutePiano);
 
+    // Músicas customizadas (songs/*.json, ver songs.js) carregam de forma assíncrona —
+    // se a lista de fases já estiver aberta quando uma terminar de chegar, atualiza na
+    // hora em vez de exigir recarregar a página.
+    PH.onSongsChanged = function () {
+      if (!el.screenLevels.hidden) renderLevelList();
+    };
+
     updateModeUI();
     reset();
     requestAnimationFrame(loop);
@@ -491,9 +498,22 @@
     PH.audio.unlock();
     watchPianoLoad();
     updateModeUI();
+    updateSpeedOptions();
     reset();
     el.overlay.hidden = true;
     state.running = true;
+  }
+
+  /** O seletor de velocidade mostra BPM de verdade (calculado a partir do BPM da fase
+   *  atual), não a porcentagem crua — o valor interno (0.5..1.5, usado em beatSeconds())
+   *  continua sendo o multiplicador, só o texto exibido muda por música. */
+  var SPEED_MULTIPLIERS = [0.5, 0.75, 1, 1.25, 1.5];
+  function updateSpeedOptions() {
+    if (!state.song) return;
+    var opts = el.speed.options;
+    for (var i = 0; i < opts.length && i < SPEED_MULTIPLIERS.length; i++) {
+      opts[i].textContent = Math.round(state.song.bpm * SPEED_MULTIPLIERS[i]) + ' BPM';
+    }
   }
 
   var pianoLoadWatched = false;
@@ -532,6 +552,15 @@
    * Cada posição de `song.notes` pode ser um midi (nota simples) ou um array de midis
    * (acorde — todas soam juntas, pela mesma duração) — por isso cada item da timeline
    * guarda `midis` (sempre array, mesmo pra nota simples: um acorde de 1 nota só).
+   *
+   * `dur` é a duração "rítmica" (até a próxima nota ficar devida — controla o timing do
+   * jogo e o tamanho da barra caindo). `sustain` é quanto tempo a nota deveria soar de
+   * verdade, que pode ser MAIOR que `dur` quando a música tem duas vozes (ex.: um baixo
+   * segurando uma mínima enquanto a melodia já passou pra próxima colcheia) — usado só
+   * pelo modo demonstração (`playDemoChord`), pra soltar a nota no tempo musicalmente
+   * certo em vez de cortá-la na hora que a próxima fica devida. Músicas sem
+   * `sustainDurations` (todas as fases escritas à mão) simplesmente têm sustain == dur,
+   * igual sempre foi.
    */
   function buildTimeline(song) {
     var secPerTick = beatSeconds(song) / PH.songTiming.PPQ;
@@ -539,8 +568,13 @@
     var out = [];
     for (var i = 0; i < song.notes.length; i++) {
       var durTicks = song.durations[i];
+      var sustainTicks = song.sustainDurations ? song.sustainDurations[i] : durTicks;
       var midis = Array.isArray(song.notes[i]) ? song.notes[i].slice() : [song.notes[i]];
-      out.push({ midis: midis, time: ticks * secPerTick, dur: durTicks * secPerTick, index: i });
+      out.push({
+        midis: midis, time: ticks * secPerTick,
+        dur: durTicks * secPerTick, sustain: sustainTicks * secPerTick,
+        index: i
+      });
       ticks += durTicks;
     }
     return out;
@@ -803,15 +837,18 @@
    * demonstração soar "grudada"/borrada em vez de articulada.
    */
   function playDemoChord(chord) {
-    var release = Math.min(0.25, chord.dur * 0.4);
+    // `sustain` (não `dur`) decide quanto tempo a nota soa aqui — ver o comentário em
+    // buildTimeline(). Numa música com duas vozes, isso deixa a nota grave "segurando"
+    // de verdade em vez de ser cortada assim que a melodia passa pra próxima colcheia.
+    var release = Math.min(0.25, chord.sustain * 0.4);
     var gen = state.demoGen;   // ver seekTo()/reset(): se mudar antes do timeout, ele é ignorado
     chord.midis.forEach(function (midi) {
       PH.audio.startNote(midi, 1);
       holdKey(midi, true);
-      state.resolvedBars.push({ midi: midi, time: chord.time, dur: chord.dur });
+      state.resolvedBars.push({ midi: midi, time: chord.time, dur: chord.sustain });
     });
     if (state.effects) PH.render.burst(chord.midis[0], true);
-    var durMs = Math.max(chord.dur * 1000 - 20, 40);
+    var durMs = Math.max(chord.sustain * 1000 - 20, 40);
     setTimeout(function () {
       if (state.demoGen !== gen) return;   // a música saltou de posição antes desse timer disparar
       chord.midis.forEach(function (midi) {

@@ -206,120 +206,6 @@ window.PianoHero = window.PianoHero || {};
     4
   );
 
-  // --- Cânone em Ré (completo) ---------------------------------------------
-  // Notas extras (fora da faixa das outras músicas) usadas nesta importação de
-  // MusicXML -- 2ª e 6ª oitavas, graves e agudos de verdade.
-  var D2 = 38, FS2 = 42, G2 = 43, A2 = 45, B2 = 47;
-  var CS3 = 49, E3 = 52;
-  var CS4 = 61, FS4 = 66;
-  var CS5 = 73, D5 = 74, E5 = 76, FS5 = 78, G5 = 79, A5 = 81, B5 = 83;
-  var CS6 = 85, D6 = 86;
-  var DOTTED_QUARTER = PPQ * 1.5;
-
-  /*
-   * Cânone em Ré (completo): melodia + baixo juntos, com acordes onde as duas
-   * vozes coincidem no tempo — diferente da fase `canon` acima (só o baixo, em
-   * loop manual). Convertido automaticamente do MusicXML de domínio público em
-   * XML/scores/Canon_in_D_easy.mxl (voz 1 = melodia, voz 5 = baixo), não escrito
-   * nota a nota à mão como as outras fases — por isso não usa `repeat()`, é a
-   * peça inteira de uma vez. Serve de fase de teste pro alcance estendido do
-   * teclado (Ré2–Ré6) e pro input de acordes (duas+ teclas ao mesmo tempo).
-   */
-  var canonfull = {
-    notes: [
-      D3, FS3, A3, D4, A2, CS3, E3, A3,
-      B2, D3, FS3, B3, FS2, A2, CS3, FS3,
-      G2, B2, D3, G3, D2, FS2, A2, D3,
-      G2, B2, D3, G3, A2, CS3, E3, A3,
-      [D3, FS5], FS3, A3, D4, [A2, E5], CS3, E3, A3,
-      [B2, D5], D3, FS3, B3, [FS2, CS5], A2, CS3, FS3,
-      [G2, B4], B2, D3, G3, [D2, A4], FS2, A2, D3,
-      [G2, B4], B2, D3, G3, [A2, CS5], CS3, E3, A3,
-      [D3, D5, FS5], FS3, A3, D4, [A2, CS5, E5], CS3, E3, A3,
-      [B2, B4, D5], D3, FS3, B3, [FS2, A4, CS5], A2, CS3, FS3,
-      [G2, G4, B4], B2, D3, G3, [D2, FS4, A4], FS2, A2, D3,
-      [G2, G4, B4], B2, D3, G3, [A2, A4, CS5], CS3, E3, A3,
-      [D3, D4], FS4, [A2, A4], G4, [B2, FS4], D4, [FS2, FS4], E4,
-      [G2, D4], B3, [D2, D4], A4, [G2, G4], B4, [A2, A4], G4,
-      [D3, FS4], D4, [A2, E4], CS5, [B2, D5], FS5, [FS2, A5], A4,
-      [G2, B4], G4, [D2, A4], FS4, [G2, D4], D5, [A2, CS5], [D3, D5],
-      CS5, D5, D4, [A2, CS4], A4, E4, FS4, [B2, D4],
-      D5, CS5, B4, [FS2, CS5], FS5, A5, B5, [G2, G5],
-      FS5, E5, G5, [D2, FS5], E5, D5, CS5, [G2, B4],
-      A4, G4, FS4, [A2, E4], G4, FS4, E4, [D3, D4],
-      E4, FS4, G4, [A2, A4], E4, A4, G4, [B2, FS4],
-      B4, A4, G4, [FS2, A4], G4, FS4, E4, [G2, D4],
-      B3, B4, CS5, [D2, D5], CS5, B4, A4, [G2, G4],
-      FS4, E4, B4, [A2, A4], B4, A4, G4, [D3, FS4],
-      FS5, [A2, E5], B2, D5, [FS2, FS5], [G2, B5], [D2, A5], [G2, B5],
-      [A2, CS6], [D3, D6], D5, [A2, CS5], B2, B4, [FS2, D5], [G2, D5],
-      D2, D5, [G2, D5], FS5, [A2, E5], A5, [D3, A5], FS5,
-      G5, A5, FS5, G5, [A2, A5], A4, B4, CS5,
-      D5, E5, FS5, G5, [B2, FS5], D5, E5, FS5,
-      FS4, G4, [FS2, A4], B4, A4, G4, A4, FS4,
-      G4, A4, [G2, G4], B4, A4, G4, FS4, E4,
-      [D2, FS4], E4, D4, E4, FS4, G4, A4, B4,
-      [G2, G4], B4, A4, B4, CS5, D5, [A2, A4], B4,
-      CS5, D5, E5, FS5, G5, A5, [D3, FS5], D5,
-      E5, FS5, E5, D5, [A2, E5], CS5, D5, E5,
-      FS5, E5, D5, CS5, [B2, D5], B4, CS5, D5,
-      D4, E4, [FS2, FS4], G4, FS4, E4, FS4, D5,
-      CS5, D5, [G2, B4], D5, CS5, B4, A4, G4,
-      [D2, A4], G4, FS4, G4, A4, B4, CS5, D5,
-      [G2, B4], D5, CS5, D5, CS5, B4, [A2, CS5], D5,
-      E5, D5, CS5, D5, B4, CS5, [D3, D5], A5,
-      [A2, A5], B5, A5, G5, [B2, FS5], FS5, [FS2, FS5], G5,
-      FS5, E5, [G2, D5], D5, [D2, D5], A4, [G2, D5], C5,
-      B4, C5, [A2, CS5], [D3, D5]
-    ],
-    durations: [
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER,
-      QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER,
-      QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER,
-      QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, HALF, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, EIGHTH, QUARTER,
-      QUARTER, HALF, QUARTER, QUARTER, HALF, HALF, HALF, HALF,
-      HALF, QUARTER, QUARTER, HALF, QUARTER, QUARTER, HALF, HALF,
-      QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, EIGHTH, SIXTEENTH,
-      SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-      SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH, EIGHTH,
-      SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-      SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH,
-      SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-      EIGHTH, SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-      SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH,
-      SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-      SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH, EIGHTH,
-      SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-      SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH,
-      SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-      EIGHTH, SIXTEENTH, SIXTEENTH, EIGHTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH,
-      SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, SIXTEENTH, DOTTED_QUARTER, EIGHTH,
-      EIGHTH, EIGHTH, EIGHTH, EIGHTH, DOTTED_QUARTER, EIGHTH, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, DOTTED_QUARTER, EIGHTH, QUARTER, QUARTER, EIGHTH, EIGHTH,
-      EIGHTH, EIGHTH, HALF, WHOLE
-    ]
-  };
-
   var SONGS = [
     {
       id: 'hotcross',
@@ -419,18 +305,39 @@ window.PianoHero = window.PianoHero || {};
       timeSignature: [3, 8],
       notes: furelise.notes,
       durations: furelise.durations
-    },
-    {
-      id: 'canonfull',
-      title: '★ Cânone em Ré — completo, com acordes',
-      subtitle: 'Pachelbel — melodia + baixo juntos — fase de teste maior',
-      bpm: 100,
-      timeSignature: [4, 4],
-      notes: canonfull.notes,
-      durations: canonfull.durations
     }
   ];
 
   PH.songs = SONGS;
   PH.songTiming = { PPQ: PPQ };
+
+  /**
+   * Músicas customizadas (compostas fora deste arquivo — importadas de MusicXML com
+   * `tools/mxl_to_song.py`, ou escritas à mão) ficam em arquivos `songs/*.json`, não
+   * aqui. `songs/manifest.json` lista quais carregar; cada um vira um item de
+   * `PH.songs`, no mesmo formato usado acima (`notes`/`durations`, mais o `sustainDurations`
+   * opcional — ver o comentário sobre isso em `buildTimeline()` no main.js). Adicionar
+   * uma música nova é só soltar o `.json` em `songs/` e listar o nome do arquivo no
+   * manifest — não precisa editar este arquivo.
+   *
+   * Carregamento é assíncrono (fetch): se a tela de fases já estiver aberta quando uma
+   * música customizada termina de carregar, `PH.onSongsChanged()` (main.js define isso)
+   * é chamado pra atualizar a lista na hora, sem precisar recarregar a página.
+   */
+  fetch('songs/manifest.json')
+    .then(function (r) { return r.ok ? r.json() : []; })
+    .then(function (files) {
+      files.forEach(function (file) {
+        fetch('songs/' + file)
+          .then(function (r) { return r.json(); })
+          .then(function (song) {
+            PH.songs.push(song);
+            if (PH.onSongsChanged) PH.onSongsChanged();
+          })
+          .catch(function (err) {
+            console.error('[songs] falha ao carregar songs/' + file + ':', err);
+          });
+      });
+    })
+    .catch(function () { /* sem songs/manifest.json (ou sem servidor): segue só com as fixas */ });
 })(window.PianoHero);

@@ -75,12 +75,12 @@
 
           <div class="options-sep" id="speedItem" hidden>
             <span class="options-row-label">Velocidade (fase)</span>
-            <select id="speed" title="Velocidade da música (fase)">
-              <option value="0.5">50%</option>
-              <option value="0.75">75%</option>
-              <option value="1" selected>100%</option>
-              <option value="1.25">125%</option>
-              <option value="1.5">150%</option>
+            <select id="speed" title="Velocidade da música (fase), em BPM">
+              <option value="0.5">… BPM</option>
+              <option value="0.75">… BPM</option>
+              <option value="1" selected>… BPM</option>
+              <option value="1.25">… BPM</option>
+              <option value="1.5">… BPM</option>
             </select>
           </div>
 
@@ -147,13 +147,11 @@
         <button id="btnBackHome" type="button" class="ghost">Voltar</button>
       </div>
 
-      <div class="overlay-card" id="screen-pause" hidden>
-        <h1>⏸ Pausado</h1>
-        <p>O jogo está parado. Continue quando quiser.</p>
-        <div class="menu-buttons">
-          <button id="btnResume" type="button" class="primary">▶ Continuar</button>
-          <button id="btnRestartFromPause" type="button">Reiniciar</button>
-          <button id="btnMenuFromPause" type="button" class="ghost">Menu</button>
+      <div class="overlay-card pause-card" id="screen-pause" hidden>
+        <div class="icon-controls">
+          <button id="btnMenuFromPause" type="button" class="icon-circle ghost" aria-label="Menu" title="Menu">🏠</button>
+          <button id="btnResume" type="button" class="icon-circle primary" aria-label="Continuar" title="Continuar">▶</button>
+          <button id="btnRestartFromPause" type="button" class="icon-circle ghost" aria-label="Reiniciar" title="Reiniciar">↺</button>
         </div>
       </div>
 
