@@ -22,11 +22,13 @@
   var LEAD_TIME = 2.0;       // segundos que uma nota leva caindo até a linha (modo fase)
   var HIT_WINDOW = 0.35;     // tolerância total (±) pra considerar a nota "no tempo"
   var PERFECT_WINDOW = 0.12; // dentro disso conta como acerto "perfeito" (mais pontos)
-  var PRE_ROLL = 1.5;        // segundos de preparo antes do tempo 0 da música
+  var PRE_ROLL = 3;          // segundos de preparo (contagem 3-2-1) antes do tempo 0 da música
+  var RESUME_COUNTDOWN = 3;  // segundos de contagem regressiva ao continuar depois de uma pausa
+  var MAX_SCORES = 5;        // quantas tentativas cada fase guarda no próprio ranking
 
   var el = {};
   var sequence = new PH.notes.Sequence('white');
-  var progress = { unlocked: 0, best: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
+  var progress = { unlocked: 0, best: {}, scores: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
 
   var state = {
     mode: 'free',         // 'free' ou 'song'
@@ -48,6 +50,7 @@
     mutePiano: false,      // true = silencia o som do piano do PC (toca num piano externo de verdade)
     demoMode: false,       // modo fase: true = a música toca sozinha (auto-play), sem exigir input
     paused: false,         // true = jogo pausado (loop congelado, overlay de pausa visível)
+    countdownTo: null,     // modo fase: songTime em que a contagem 3-2-1 termina; null = sem contagem
     log: [],               // histórico de notas resolvidas na fase atual (pro relatório)
     notes: [],             // notas ainda por vir, visíveis no momento (ambos os modos)
     resolvedBars: [],      // barras já tocadas que ainda estão "soando" (efeito na nota)
@@ -103,7 +106,7 @@
     el.loopToggleBtn = document.getElementById('loopToggleBtn');
     el.loopClearBtn = document.getElementById('loopClearBtn');
     el.menuBtn = document.getElementById('menuBtn');
-    el.pauseBtn = document.getElementById('pauseBtn');
+    el.countdown = document.getElementById('countdown');
     el.optionsBtn = document.getElementById('optionsBtn');
     el.optionsPanel = document.getElementById('optionsPanel');
 
@@ -123,6 +126,7 @@
     el.setupTitle = document.getElementById('setupTitle');
     el.setupSubtitle = document.getElementById('setupSubtitle');
     el.setupSpeed = document.getElementById('setupSpeed');
+    el.setupRanking = document.getElementById('setupRanking');
     el.levelList = document.getElementById('levelList');
     el.rankingList = document.getElementById('rankingList');
     el.completeTitle = document.getElementById('completeTitle');
@@ -192,7 +196,18 @@
     initScrubber();
     initLoopTrack();
 
-    el.pauseBtn.addEventListener('click', togglePause);
+    // Pausar como num vídeo: tocar/clicar no meio do palco (a área das notas caindo, acima
+    // do teclado — o teclado continua sendo pra tocar notas). Escuta `click` (não
+    // `pointerdown`) pra um arrasto não pausar sem querer.
+    el.canvas.addEventListener('click', function (e) {
+      if (!state.running) return;
+      var r = el.canvas.getBoundingClientRect();
+      if (e.clientY - r.top < PH.render.getLayout().pianoY) pauseGame();
+    });
+    // Na pausa, tocar fora dos botões (no "vídeo" parado) também continua.
+    el.overlay.addEventListener('click', function (e) {
+      if (e.target === el.overlay && state.paused) resumeGame();
+    });
 
     document.getElementById('btnResume').addEventListener('click', resumeGame);
     document.getElementById('btnRestartFromPause').addEventListener('click', function () {
@@ -297,6 +312,13 @@
     // Músicas customizadas (songs/*.json, ver songs.js) carregam de forma assíncrona —
     // se a lista de fases já estiver aberta quando uma terminar de chegar, atualiza na
     // hora em vez de exigir recarregar a página.
+    window.addEventListener('resize', drawMapPath);
+    // Mapa horizontal: no PC a roda do mouse (vertical) passa as fases pro lado.
+    el.levelList.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      el.levelList.scrollLeft += e.deltaY;
+    }, { passive: false });
     PH.onSongsChanged = function () {
       if (!el.screenHome.hidden) renderLevelList();
     };
@@ -317,6 +339,9 @@
     el.screenComplete.hidden = name !== 'complete';
     el.screenPause.hidden = name !== 'pause';
     el.overlay.hidden = false;
+    // Pausa "de vídeo": fundo quase transparente, dá pra ver as notas paradas no palco
+    // (e elas se mexem ao arrastar a barra de progresso com o jogo pausado).
+    el.overlay.classList.toggle('see-through', name === 'pause');
     // Fora da partida (menu, lista de fases, ranking, fim de fase) a barra de progresso some:
     // senão ela fica sobrando embaixo do palco, deixa a página mais alta que a janela e a roda
     // do mouse acaba rolando a página/mexendo na música em vez de rolar a lista de fases.
@@ -327,8 +352,8 @@
 
   /** A tela inicial é a própria lista de fases — sempre re-renderizada (melhor % pode ter mudado). */
   function showHome() {
-    renderLevelList();
     showScreen('home');
+    renderLevelList();
   }
 
   function showRanking() {
@@ -367,30 +392,65 @@
     el.rankingList.innerHTML = html;
   }
 
+  /**
+   * Tela inicial = mapa de fases: bolhas numeradas lado a lado, subindo e descendo em
+   * zigue-zague e ligadas por uma trilha, como o mapa de fases de um jogo mobile — a
+   * sequência (fase 1 → 2 → 3…) aparece no próprio desenho, e dá pra ir passando pro lado
+   * (arrastar no celular, roda do mouse no PC). Horizontal porque o jogo no celular é
+   * deitado: a tela é larga e baixa. Fase concluída mostra a melhor precisão; a primeira
+   * ainda não concluída é a "atual" (destacada, e o mapa já abre rolado até ela).
+   */
+  var MAP_K = [0.5, 1, 0.5, 0];   // altura relativa (0 = topo, 1 = base) de cada bolha, repetindo o zigue-zague
+
   function renderLevelList() {
-    var html = '';
+    var current = -1;
+    var html = '<svg class="map-path" aria-hidden="true"><path/></svg>';
     for (var i = 0; i < PH.songs.length; i++) {
       var song = PH.songs[i];
-      // Bloqueio de progressão desativado por enquanto (a pedido) — todas as fases
-      // ficam livres pra jogar. `progress.unlocked` continua sendo salvo, então dá
-      // pra reativar o gate depois só trocando essa condição de volta.
-      var locked = false;
       var best = progress.best[song.id];
-      html += '<button type="button" class="level-row' + (locked ? ' locked' : '') + '"' +
-        ' data-index="' + i + '"' + (locked ? ' disabled' : '') + '>' +
-        '<span class="level-num">' + (i + 1) + '</span>' +
-        '<span class="level-info"><strong>' + song.title + '</strong><small>' + song.subtitle + ' · ' + song.bpm + ' BPM</small></span>' +
-        (locked
-          ? '<span class="level-lock">🔒</span>'
-          : '<span class="level-score">' + (best ? best.accuracy + '%' : song.notes.length + ' notas') + '</span>') +
-        '</button>';
+      if (!best && current === -1) current = i;
+      var cls = best ? ' done' : (i === current ? ' current' : '');
+      html += '<div class="map-node"><div class="map-stop" style="--k:' + MAP_K[i % MAP_K.length] + '">' +
+        '<button type="button" class="map-bubble' + cls + '" data-index="' + i + '"' +
+        ' aria-label="Fase ' + (i + 1) + ': ' + song.title + '">' +
+        '<span class="map-num">' + (i + 1) + '</span>' +
+        (best ? '<span class="map-best">' + best.accuracy + '%</span>' : '') +
+        '</button>' +
+        '<span class="map-label">' + song.title + '</span>' +
+        '</div></div>';
     }
     el.levelList.innerHTML = html;
 
-    var rows = el.levelList.querySelectorAll('.level-row:not(.locked)');
-    for (var j = 0; j < rows.length; j++) {
-      rows[j].addEventListener('click', onLevelClick);
+    var bubbles = el.levelList.querySelectorAll('.map-bubble');
+    for (var j = 0; j < bubbles.length; j++) {
+      bubbles[j].addEventListener('click', onLevelClick);
     }
+    drawMapPath();
+    var cur = el.levelList.querySelector('.map-bubble.current');
+    if (cur) el.levelList.scrollLeft = Math.max(0, cur.closest('.map-node').offsetLeft - el.levelList.clientWidth / 3);
+  }
+
+  /** Trilha curva ligando o centro de cada bolha à próxima (refeita quando a largura muda). */
+  function drawMapPath() {
+    var svg = el.levelList.querySelector('.map-path');
+    if (!svg || el.screenHome.hidden) return;
+    var bubbles = el.levelList.querySelectorAll('.map-bubble');
+    var box = el.levelList.getBoundingClientRect();
+    var pts = [];
+    for (var i = 0; i < bubbles.length; i++) {
+      var r = bubbles[i].getBoundingClientRect();
+      pts.push({ x: r.left - box.left + el.levelList.scrollLeft + r.width / 2,
+                 y: r.top - box.top + el.levelList.scrollTop + r.height / 2 });
+    }
+    var d = '';
+    pts.forEach(function (pt, k) {
+      if (k === 0) { d = 'M' + pt.x + ' ' + pt.y; return; }
+      var prev = pts[k - 1], midX = (prev.x + pt.x) / 2;
+      d += ' C' + midX + ' ' + prev.y + ' ' + midX + ' ' + pt.y + ' ' + pt.x + ' ' + pt.y;
+    });
+    svg.setAttribute('width', el.levelList.scrollWidth);
+    svg.setAttribute('height', el.levelList.scrollHeight);
+    svg.querySelector('path').setAttribute('d', d);
   }
 
   function onLevelClick() {
@@ -418,7 +478,23 @@
         Math.round(song.bpm * mult) + ' BPM' + (mult === 1 ? ' (original)' : '') + '</option>';
     });
     el.setupSpeed.innerHTML = html;
+    el.setupRanking.innerHTML = buildSongRankingHTML(song);
     showScreen('song');
+  }
+
+  function buildSongRankingHTML(song) {
+    var list = scoresFor(song.id);
+    if (!list.length) return '<p class="ranking-empty">Nenhuma tentativa ainda — seja o primeiro!</p>';
+    var MEDALS = ['🥇', '🥈', '🥉'];
+    return '<div class="setup-ranking-title">🏆 Ranking da fase</div>' + list.map(function (e, i) {
+      var details = e.accuracy + '%' + (e.combo ? ' · combo ' + e.combo : '') +
+        (e.wait ? ' · espera' : '') +
+        (e.speed && e.speed !== 1 ? ' · ' + Math.round(song.bpm * e.speed) + ' BPM' : '') +
+        (e.date ? ' · ' + new Date(e.date).toLocaleDateString('pt-BR') : '');
+      return '<div class="setup-rank-row"><span class="setup-rank-pos">' + (MEDALS[i] || (i + 1) + 'º') + '</span>' +
+        '<span class="setup-rank-info">' + details + '</span>' +
+        '<span class="setup-rank-score">' + e.score + ' pts</span></div>';
+    }).join('');
   }
 
   function playSongAs(kind) {
@@ -457,6 +533,9 @@
 
     function begin(e) {
       if (state.mode !== 'song' || !state.songDuration) return;
+      // Mexer na barra pausa o jogo: dá pra procurar o trecho vendo as notas paradas no
+      // palco; ao continuar vem a contagem 3-2-1 (ver resumeGame()).
+      pauseGame();
       dragging = true;
       state.scrubbing = true;
       el.scrubberItem.classList.add('scrubbing');
@@ -490,6 +569,7 @@
       // a roda deve rolar essa tela normalmente, não mexer na posição da música.
       if (!el.overlay.hidden && el.screenPause.hidden) return;
       e.preventDefault();
+      pauseGame();
       seekTo(state.songTime + (e.deltaY > 0 ? WHEEL_STEP : -WHEEL_STEP));
     }
     document.getElementById('stage').addEventListener('wheel', onWheel, { passive: false });
@@ -637,22 +717,66 @@
     if (!state.running) return;   // nada rodando (menu/fim de fase): não há o que pausar
     state.running = false;
     state.paused = true;
-    updatePauseButton();
+    // Pausado, nada deve ficar soando nem aceso.
+    Object.keys(state.held).forEach(function (midi) {
+      PH.audio.stopNote(Number(midi));
+      releaseKey(Number(midi));
+    });
+    state.demoGen++;   // invalida notas da demonstração agendadas pra depois da pausa
+    hideCountdown();
     updateDemoBadge();
     showScreen('pause');
   }
 
+  /**
+   * Continua. No modo fase não volta "a seco" no mesmo instante: recua o relógio
+   * RESUME_COUNTDOWN segundos e mostra 3-2-1 — as notas a partir de onde parou voltam a
+   * cair de cima, dando tempo de ver o que vem (e de se reposicionar depois de mexer na
+   * barra de progresso). Só o relógio recua: `cursor`/`targetMidis` continuam na nota
+   * pendente, então notas de antes do ponto de pausa não voltam a ser cobradas.
+   */
   function resumeGame() {
     if (!state.paused) return;
     state.paused = false;
-    state.running = true;
-    updatePauseButton();
-    updateDemoBadge();
     el.overlay.hidden = true;
+    if (state.mode === 'song' && state.cursor < state.timeline.length) {
+      var resumeAt = state.songTime;
+      state.resolvedBars = [];
+      state.songTime = resumeAt - RESUME_COUNTDOWN;
+      state.countdownTo = resumeAt;
+      if (state.metronome) state.nextClick = Math.ceil(state.songTime / beatSeconds(state.song));
+      syncSongNotes();
+    }
+    state.running = true;
+    updateDemoBadge();
   }
 
-  function updatePauseButton() {
-    el.pauseBtn.textContent = state.paused ? '▶ Continuar' : '⏸ Pausar';
+  /* ---------------- contagem regressiva (3-2-1) ---------------- */
+
+  var countdownShown = null;
+  function updateCountdown() {
+    if (state.countdownTo == null || state.mode !== 'song') return;
+    var remaining = state.countdownTo - state.songTime;
+    if (remaining <= 0) {
+      hideCountdown();
+      showFeedback('Vai!', 'good');
+      return;
+    }
+    var n = Math.ceil(remaining);
+    if (n !== countdownShown) {
+      countdownShown = n;
+      el.countdown.textContent = n;
+      el.countdown.hidden = false;
+      el.countdown.classList.remove('pop');   // reinicia a animação a cada número
+      void el.countdown.offsetWidth;
+      el.countdown.classList.add('pop');
+    }
+  }
+
+  function hideCountdown() {
+    state.countdownTo = null;
+    countdownShown = null;
+    el.countdown.hidden = true;
   }
 
   /* ---------------- progresso e preferências (localStorage) ---------------- */
@@ -660,11 +784,12 @@
   function loadProgress() {
     try {
       var raw = localStorage.getItem(PROGRESS_KEY);
-      if (!raw) return { unlocked: 0, best: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
+      if (!raw) return { unlocked: 0, best: {}, scores: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
       var p = JSON.parse(raw);
       return {
         unlocked: p.unlocked || 0,
         best: p.best || {},
+        scores: p.scores || {},
         prefs: {
           speed: (p.prefs && p.prefs.speed) || 1,
           effects: p.prefs && typeof p.prefs.effects === 'boolean' ? p.prefs.effects : true,
@@ -675,12 +800,18 @@
         }
       };
     } catch (e) {
-      return { unlocked: 0, best: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
+      return { unlocked: 0, best: {}, scores: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
     }
   }
 
   function saveProgressState() {
     try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress)); } catch (e) { /* privado/bloqueado: ignora */ }
+  }
+
+  /** Tentativas guardadas da fase (progresso de antes do ranking por fase só tem a melhor). */
+  function scoresFor(songId) {
+    if (progress.scores[songId]) return progress.scores[songId].slice();
+    return progress.best[songId] ? [progress.best[songId]] : [];
   }
 
   function songIndexOf(id) {
@@ -699,9 +830,14 @@
   function saveProgress(songId, acc, score, combo) {
     var idx = songIndexOf(songId);
     var best = progress.best[songId];
+    var entry = { accuracy: acc, score: score, combo: combo, date: Date.now(), wait: state.waitMode, speed: state.speed };
     if (!best || score > best.score || (score === best.score && acc > best.accuracy)) {
-      progress.best[songId] = { accuracy: acc, score: score, combo: combo, date: Date.now() };
+      progress.best[songId] = entry;
     }
+    // Ranking da própria fase: as MAX_SCORES melhores tentativas, não só a melhor.
+    var list = scoresFor(songId).concat([entry]);
+    list.sort(function (a, b) { return b.score - a.score || b.accuracy - a.accuracy; });
+    progress.scores[songId] = list.slice(0, MAX_SCORES);
     if (idx >= 0 && idx + 1 < PH.songs.length) {
       progress.unlocked = Math.max(progress.unlocked, idx + 1);
     }
@@ -824,6 +960,7 @@
     // Solta qualquer nota que ainda estivesse soando antes de trocar de fase/modo.
     Object.keys(state.held).forEach(function (midi) { PH.audio.stopNote(Number(midi)); });
     state.demoGen++;   // invalida setTimeouts de notas da demonstração agendados antes deste reset
+    hideCountdown();
 
     state.held = {};
     state.flashes = {};
@@ -840,6 +977,7 @@
       state.timeline = buildTimeline(state.song);
       state.cursor = 0;
       state.songTime = -PRE_ROLL;
+      state.countdownTo = 0;
       var last = state.timeline[state.timeline.length - 1];
       state.songDuration = last ? last.time + last.dur : 0;
       // Primeiro tempo (semínima) a soar: pode ser negativo (clique de contagem, durante
@@ -847,7 +985,7 @@
       state.nextClick = Math.ceil(state.songTime / beatSeconds(state.song));
       state.notes = [];
       state.targetMidis = state.timeline.length ? state.timeline[0].midis.slice() : [];
-      showFeedback('Prepare-se…', 'info');
+      showFeedback('', null);
     } else {
       state.notes = [];
       fill();
@@ -919,6 +1057,7 @@
     if (state.mode !== 'song' || !state.timeline.length) return;
     state.songTime = Math.max(0, Math.min(t, state.songDuration));
     state.demoGen++;   // invalida setTimeouts de notas da demonstração agendados antes do salto
+    hideCountdown();
 
     Object.keys(state.held).forEach(function (midi) {
       PH.audio.stopNote(Number(midi));
@@ -1035,7 +1174,6 @@
 
   function updateSong(dt) {
     if (!state.running || state.scrubbing) return;   // arrastando a barra: o relógio fica em pausa
-    var wasNegative = state.songTime < 0;
     // Modo espera: a nota "segura" o relógio da música na própria linha de acerto até o
     // jogador tocar — o relógio nunca passa do tempo da nota ainda não resolvida, então
     // checkAutoMiss() nunca vê tempo suficiente pra estourar a janela e dar timeout.
@@ -1046,7 +1184,6 @@
     } else {
       state.songTime += dt;
     }
-    if (wasNegative && state.songTime >= 0) showFeedback('Vai!', 'good');
     // Repetir trecho: ao alcançar (ou passar) a marca de fim, volta pra marca de início
     // usando `seekTo()` (nunca setando `state.songTime` direto), pra também resolver
     // `cursor`/`targetMidis` de novo a partir da nova posição.
@@ -1419,6 +1556,7 @@
 
     update(dt, rawDt);
     if (state.mode === 'song') {
+      updateCountdown();
       syncSongNotes();
       if (!state.scrubbing) updateScrubber();
     }

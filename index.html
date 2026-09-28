@@ -20,6 +20,13 @@
   }
 </script>
 
+<!-- Celular em pé: o jogo é pra jogar deitado (paisagem). Visível só via CSS
+     (html.compact + orientação retrato), ver style.css. -->
+<div id="rotateHint" class="rotate-hint" aria-live="polite">
+  <div class="rotate-phone">📱</div>
+  <p>Gire o celular para jogar deitado</p>
+</div>
+
 <div id="app">
 
   <header id="hud">
@@ -105,7 +112,6 @@
           </div>
         </div>
       </div>
-      <button id="pauseBtn" type="button">⏸ Pausar</button>
       <button id="restart" type="button">Reiniciar</button>
       <button id="menuBtn" type="button">Menu</button>
     </div>
@@ -122,6 +128,8 @@
 
   <div id="stage">
     <canvas id="game"></canvas>
+    <!-- Contagem 3-2-1: no começo da fase e ao continuar depois de uma pausa. -->
+    <div id="countdown" class="countdown" hidden aria-live="polite"></div>
     <div id="overlay">
 
       <!-- Tela inicial = a própria lista de fases (entra direto jogando). Modo livre,
@@ -135,13 +143,16 @@
             <button id="btnHelp" type="button" class="icon-circle small ghost" aria-label="Ajuda" title="Ajuda">?</button>
           </div>
         </div>
-        <div class="level-list" id="levelList"></div>
+        <div class="level-list level-map" id="levelList"></div>
       </div>
 
       <!-- Ao tocar numa fase: escolher COMO tocar antes de começar (em vez de caçar
            essas opções no menu ⚙ durante a partida). -->
       <div class="overlay-card song-setup" id="screen-song" hidden>
-        <h1 id="setupTitle">—</h1>
+        <div class="home-head">
+          <h1 id="setupTitle">—</h1>
+          <button id="btnBackFromSong" type="button" class="icon-circle small ghost" aria-label="Voltar para as fases" title="Voltar para as fases">✕</button>
+        </div>
         <p id="setupSubtitle"></p>
         <div class="setup-modes">
           <button id="btnPlayNormal" type="button" class="setup-mode primary">
@@ -161,7 +172,7 @@
           <span>Velocidade</span>
           <select id="setupSpeed"></select>
         </label>
-        <button id="btnBackFromSong" type="button" class="ghost">Voltar</button>
+        <div class="setup-ranking" id="setupRanking"></div>
       </div>
 
       <div class="overlay-card wide help-card" id="screen-help" hidden>
@@ -172,6 +183,7 @@
         <p>As notas caem até a linha: toque a nota certa, na hora certa.</p>
         <ul class="how">
           <li><b>Toque/mouse:</b> toque nas teclas desenhadas</li>
+          <li><b>Pausar:</b> toque no meio da tela, como num vídeo (ou Esc)</li>
           <li><b>Teclado do PC:</b> Z X C V B N M (1ª oitava) · Q W E R T Y U I (2ª oitava) · linha de cima (S D, G H J, 2 3, 5 6 7) = teclas pretas</li>
           <li><b>Piano MIDI:</b> conecte e toque — detecção automática</li>
           <li><b>Ao escolher uma música:</b> jogar no ritmo, modo espera (a música espera você) ou demonstração (só ouvir)</li>
@@ -190,7 +202,7 @@
 
       <div class="overlay-card pause-card" id="screen-pause" hidden>
         <div class="icon-controls">
-          <button id="btnMenuFromPause" type="button" class="icon-circle ghost" aria-label="Menu" title="Menu">🏠</button>
+          <button id="btnMenuFromPause" type="button" class="icon-circle ghost" aria-label="Voltar para as fases" title="Voltar para as fases">🗺️</button>
           <button id="btnResume" type="button" class="icon-circle primary" aria-label="Continuar" title="Continuar">▶</button>
           <button id="btnRestartFromPause" type="button" class="icon-circle ghost" aria-label="Reiniciar" title="Reiniciar">↺</button>
         </div>

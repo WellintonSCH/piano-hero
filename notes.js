@@ -23,6 +23,8 @@ window.PianoHero = window.PianoHero || {};
     return !!coarse && Math.min(screen.width, screen.height) < 600;
   })();
   var MIN_MIDI = COMPACT ? 48 : 36, MAX_MIDI = COMPACT ? 72 : 96;
+  // Classe no <html> pro CSS montar o layout de celular (deitado, com aviso de girar).
+  if (COMPACT) document.documentElement.classList.add('compact');
   var WHITE_PC = [0, 2, 4, 5, 7, 9, 11];   // classes de altura das teclas brancas (Dó Ré Mi Fá Sol Lá Si)
   var BLACK_PC = [1, 3, 6, 8, 10];         // classes de altura das teclas pretas
 

@@ -66,6 +66,12 @@ window.PianoHero = window.PianoHero || {};
     if (!ctx) {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
+      // iPhone: por padrão o Web Audio é tratado como "som ambiente" e fica MUDO com a
+      // chave de silencioso ligada. "playback" (Safari 16.4+) trata como mídia, igual a
+      // um vídeo — toca mesmo no silencioso.
+      if (navigator.audioSession) {
+        try { navigator.audioSession.type = 'playback'; } catch (e) { /* não suportado */ }
+      }
       ctx = new AC();
       master = ctx.createGain();
       master.gain.value = 0.7;
@@ -73,8 +79,16 @@ window.PianoHero = window.PianoHero || {};
       instrumentGain = ctx.createGain();
       instrumentGain.gain.value = muted ? 0.0001 : 1;
       instrumentGain.connect(master);
+      // Toca um buffer mudo de 1 amostra dentro do próprio toque que criou o contexto:
+      // é o que "destrava" o áudio de vez no Safari/iOS (senão pode continuar mudo).
+      var silent = ctx.createBufferSource();
+      silent.buffer = ctx.createBuffer(1, 1, 22050);
+      silent.connect(ctx.destination);
+      silent.start(0);
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    // 'suspended' (sem gesto ainda) ou 'interrupted' (iOS, depois de ligação/app em
+    // segundo plano): qualquer estado que não seja tocando tenta retomar.
+    if (ctx.state !== 'running') ctx.resume();
     if (!loading) loadSamples();
     return ctx;
   }
@@ -230,6 +244,15 @@ window.PianoHero = window.PianoHero || {};
     osc.start(t);
     osc.stop(t + 0.18);
   }
+
+  // No celular, tocar uma tecla dispara `pointerdown`, que o Chrome do Android NÃO conta
+  // como gesto que libera áudio (só o fim do toque conta). Se o contexto foi suspenso
+  // (app em segundo plano, tela bloqueada), retoma no fim de qualquer toque.
+  function resumeOnGesture() {
+    if (ctx && ctx.state !== 'running') ctx.resume();
+  }
+  document.addEventListener('touchend', resumeOnGesture, { passive: true });
+  document.addEventListener('click', resumeOnGesture);
 
   PH.audio = {
     unlock: ensure,

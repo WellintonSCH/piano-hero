@@ -422,14 +422,17 @@ button.ghost:hover { color: var(--text); }
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--muted-2);
-  min-width: 34px;
+  min-width: 40px;
   text-align: center;
 }
+
+/* Os tempos da barra de progresso (não os espaçadores da faixa de loop) em destaque. */
+.scrub-row .scrub-time { font-size: 13px; color: var(--text); }
 
 .scrub-track {
   position: relative;
   flex: 1 1 auto;
-  height: 18px;
+  height: 30px;
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -441,15 +444,16 @@ button.ghost:hover { color: var(--text); }
   position: absolute;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 10px;
   border-radius: 999px;
-  background: var(--line);
+  background: rgba(255, 255, 255, .16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
 }
 
 .scrub-fill {
   position: absolute;
   left: 0;
-  height: 6px;
+  height: 10px;
   width: 0%;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--accent-2), var(--accent));
@@ -459,9 +463,9 @@ button.ghost:hover { color: var(--text); }
 .scrub-thumb {
   position: absolute;
   left: 0%;
-  width: 14px;
-  height: 14px;
-  margin-left: -7px;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
   border-radius: 50%;
   background: #fff;
   border: 2px solid var(--accent-2);
@@ -1003,3 +1007,287 @@ button.ghost:hover { color: var(--text); }
   .level-row { padding: 10px 12px; gap: 10px; }
   #tips .midi-status { display: none; }   /* log MIDI cru: depuração, só ocupa espaço no celular */
 }
+
+/* ---------- Toque no celular: sem seleção de texto nem menu de toque longo ---------- */
+
+/* Tocar/segurar teclas rápido no celular selecionava texto (a "lupa"/alças azuis) e o
+   toque longo abria o menu de copiar. O jogo não tem texto pra copiar, então desliga
+   seleção, menu de toque longo e o flash azul de toque. `touch-action: none` no canvas
+   também impede zoom de toque duplo e rolagem ao deslizar o dedo pelas teclas. */
+#app, .rotate-hint {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+* { -webkit-tap-highlight-color: transparent; }
+#game { touch-action: none; }
+
+/* ---------- Pausa "de vídeo" ---------- */
+
+/* Na pausa o fundo fica quase transparente (dá pra ver as notas paradas e elas andam ao
+   arrastar a barra de progresso). O cartão some: só os ícones no meio, como num player. */
+#overlay.see-through {
+  background: rgba(6, 7, 13, .38);
+  backdrop-filter: none;
+}
+#overlay.see-through .pause-card {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* ---------- Contagem regressiva 3-2-1 ---------- */
+
+.countdown {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 96px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 4px 28px rgba(111, 155, 255, .8);
+  pointer-events: none;
+  z-index: 4;
+}
+.countdown[hidden] { display: none; }
+.countdown.pop { animation: countdown-pop .9s ease-out; }
+@keyframes countdown-pop {
+  0%   { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+  20%  { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(.9);  opacity: .6; }
+}
+
+/* ---------- Mapa de fases (tela inicial) ---------- */
+
+/* O cartão inicial fica mais largo no PC: o mapa corre na horizontal. */
+.overlay-card.home-card { max-width: 920px; }
+
+.level-map {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 190px;
+  padding: 0 24px;
+  scroll-snap-type: x proximity;
+}
+
+.map-path {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+.map-path path {
+  fill: none;
+  stroke: rgba(111, 155, 255, .35);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 2 14;
+}
+
+.map-node {
+  position: relative;
+  flex: 0 0 128px;
+  scroll-snap-align: center;
+}
+
+/* Bolha + nome, descendo/subindo no zigue-zague: --k = 0 (topo) … 1 (base). */
+.map-stop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc((100% - 122px) * var(--k) + 10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.map-bubble {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 35% 30%, #2c3560, #161b33);
+  border: 2px solid var(--line);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+  transition: transform .12s ease;
+  z-index: 1;
+}
+.map-bubble:hover { transform: scale(1.07); }
+.map-bubble:active { transform: scale(.95); }
+
+.map-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.map-bubble.done {
+  background: radial-gradient(circle at 35% 30%, #3fe0a4, #16875c);
+  border-color: rgba(56, 217, 150, .7);
+}
+
+.map-bubble.current {
+  background: radial-gradient(circle at 35% 30%, #9dbaff, var(--accent-2));
+  border-color: #fff;
+  animation: map-pulse 1.6s ease-in-out infinite;
+}
+@keyframes map-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(111, 155, 255, .55), 0 6px 18px rgba(0, 0, 0, .45); }
+  50%      { box-shadow: 0 0 0 12px rgba(111, 155, 255, 0), 0 6px 18px rgba(0, 0, 0, .45); }
+}
+
+.map-best {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--gold);
+  background: #141830;
+  border: 1px solid rgba(255, 209, 88, .45);
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
+.map-label {
+  width: 120px;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--muted);
+}
+
+/* ---------- Ranking da fase (na tela de escolher como tocar) ---------- */
+
+.setup-ranking { margin: 8px 0 10px; text-align: left; }
+
+.song-setup .home-head { margin-bottom: 2px; }
+.song-setup .home-head h1 { margin: 0; text-align: left; }
+.song-setup > p { text-align: left; }
+.setup-ranking .ranking-empty { margin: 10px 0; font-size: 12.5px; }
+
+.setup-ranking-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  margin-bottom: 6px;
+}
+
+.setup-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12.5px;
+}
+.setup-rank-row:last-child { border-bottom: none; }
+.setup-rank-pos { flex: 0 0 26px; text-align: center; font-weight: 700; color: var(--muted); }
+.setup-rank-info { flex: 1 1 auto; min-width: 0; color: var(--muted); }
+.setup-rank-score { flex: 0 0 auto; font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+/* ---------- Celular: jogar deitado ---------- */
+
+.rotate-hint { display: none; }
+
+/* Celular em pé: só o aviso de girar (o jogo foi pensado pra paisagem). */
+@media (orientation: portrait) {
+  html.compact .rotate-hint {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: var(--bg);
+    color: var(--text);
+    text-align: center;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 24px;
+  }
+  html.compact #app { display: none; }
+}
+
+.rotate-phone {
+  font-size: 64px;
+  animation: rotate-phone 2.2s ease-in-out infinite;
+}
+@keyframes rotate-phone {
+  0%, 25%   { transform: rotate(0deg); }
+  55%, 100% { transform: rotate(-90deg); }
+}
+
+/* Celular deitado: a tela tem ~360px de altura — HUD numa linha só e fina, barra de
+   progresso enxuta (a faixa de repetir trecho fica pro PC), feedback por cima do palco. */
+@media (orientation: landscape) {
+  html.compact body { padding: 4px 10px; }
+  html.compact #app { gap: 4px; max-width: none; }
+
+  html.compact #hud {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 3px 10px;
+    border-radius: var(--radius-md);
+  }
+  html.compact .hud-item { min-width: 0; padding-right: 10px; flex-direction: row; align-items: baseline; gap: 5px; }
+  html.compact .hud-label { font-size: 9.5px; }
+  html.compact .hud-item strong { font-size: 15px; }
+  html.compact #songLabelItem { flex: 0 1 auto; min-width: 0; }
+  html.compact #songLabel { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html.compact .hud-controls { width: auto; flex-wrap: nowrap; gap: 6px; }
+  html.compact .hud-controls button, html.compact #optionsBtn { padding: 5px 10px; font-size: 12px; }
+  html.compact .demo-badge { padding: 3px 9px; font-size: 10.5px; }
+
+  html.compact #stage { border-radius: var(--radius-md); }
+  html.compact .scrubber { gap: 0; padding: 0 4px; }
+  html.compact .loop-row, html.compact .loop-controls { display: none; }
+
+  html.compact #tips {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    min-height: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  html.compact #tips .midi-status { display: none; }
+
+  html.compact #overlay { padding: 6px; }
+  html.compact .overlay-card { padding: 14px 16px 12px; }
+  html.compact .overlay-card h1 { font-size: 20px; }
+  html.compact .countdown { font-size: 72px; }
+
+  /* Tela de escolher modo: os 3 modos lado a lado (a tela deitada é baixa demais pra empilhar). */
+  html.compact .song-setup { max-width: 720px; }
+  html.compact .setup-modes { flex-direction: row; }
+  html.compact .setup-mode { flex-direction: column; gap: 4px; padding: 10px 8px; text-align: center; }
+  html.compact .setup-text { align-items: center; }
+  html.compact .setup-text small { display: none; }
+  html.compact .setup-speed { margin: 10px 0 4px; }
+}
+
+/* O mapa não tem altura própria (as bolhas são posicionadas por cima), então precisa de
+   uma altura explícita — e com seletor tão específico quanto `.home-card .level-list`
+   (min-height: 0), senão ele colapsa pra 0. No celular deitado ele ocupa o que sobra. */
+.home-card .level-map { height: 320px; min-height: 200px; }
+html.compact .home-card .level-map { height: auto; flex: 1 1 auto; min-height: 170px; }
