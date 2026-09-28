@@ -145,6 +145,14 @@
     <canvas id="game"></canvas>
     <!-- Contagem 3-2-1: no começo da fase e ao continuar depois de uma pausa. -->
     <div id="countdown" class="countdown" hidden aria-live="polite"></div>
+    <!-- Barra de progresso lateral (modo fase): começo embaixo, fim em cima, na altura da
+         pista de notas — longe do teclado. Arrastar pausa e navega. -->
+    <div id="vScrub" class="vscrub" hidden title="Arraste pra voltar/avançar na música">
+      <div id="vScrubTrack" class="vscrub-track">
+        <div id="vScrubFill" class="vscrub-fill"></div>
+        <div id="vScrubThumb" class="vscrub-thumb"><span id="vScrubTime" class="vscrub-time">0:00</span></div>
+      </div>
+    </div>
     <div id="overlay">
 
       <!-- Tela inicial = a própria lista de fases (entra direto jogando). Modo livre,

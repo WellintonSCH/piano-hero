@@ -108,6 +108,11 @@
     el.loopClearBtn = document.getElementById('loopClearBtn');
     el.menuBtn = document.getElementById('menuBtn');
     el.countdown = document.getElementById('countdown');
+    el.vScrub = document.getElementById('vScrub');
+    el.vScrubTrack = document.getElementById('vScrubTrack');
+    el.vScrubFill = document.getElementById('vScrubFill');
+    el.vScrubThumb = document.getElementById('vScrubThumb');
+    el.vScrubTime = document.getElementById('vScrubTime');
     el.optionsBtn = document.getElementById('optionsBtn');
     el.optionsPanel = document.getElementById('optionsPanel');
 
@@ -198,23 +203,8 @@
     initScrubber();
     initLoopTrack();
 
-    // Pausar como num vídeo: tocar/clicar no meio do palco (a área das notas caindo, acima
-    // do teclado — o teclado continua sendo pra tocar notas). Um "toque" = soltar perto de
-    // onde apertou, rápido (arrasto não pausa). Usa pointerdown/up e não `click`: o input.js
-    // cancela o `touchstart` do canvas (pra o Safari não abrir a lupa de seleção ao segurar
-    // uma tecla), e com isso o iPhone deixa de gerar `click` no canvas.
-    var tapStart = null;
-    el.canvas.addEventListener('pointerdown', function (e) {
-      var r = el.canvas.getBoundingClientRect();
-      tapStart = (e.clientY - r.top < PH.render.getLayout().pianoY)
-        ? { x: e.clientX, y: e.clientY, t: performance.now() } : null;
-    });
-    el.canvas.addEventListener('pointerup', function (e) {
-      if (!tapStart || !state.running) return;
-      var moved = Math.abs(e.clientX - tapStart.x) + Math.abs(e.clientY - tapStart.y);
-      if (moved < 16 && performance.now() - tapStart.t < 500) pauseGame();
-      tapStart = null;
-    });
+    initHighwayGestures();
+    initVerticalScrubber();
     // ⏪ / ⏩: voltar/avançar alguns segundos. Ficam no topo (HUD) e na pausa — longe das
     // teclas, pra não esbarrar tocando (a barra de progresso fica só no PC).
     ['seekBackBtn', 'btnSeekBackPause'].forEach(function (id) {
@@ -222,10 +212,6 @@
     });
     ['seekFwdBtn', 'btnSeekFwdPause'].forEach(function (id) {
       document.getElementById(id).addEventListener('click', function () { seekBy(SEEK_STEP); });
-    });
-    // Na pausa, tocar fora dos botões (no "vídeo" parado) também continua.
-    el.overlay.addEventListener('click', function (e) {
-      if (e.target === el.overlay && state.paused) resumeGame();
     });
 
     document.getElementById('btnResume').addEventListener('click', resumeGame);
@@ -423,6 +409,7 @@
     // do mouse acaba rolando a página/mexendo na música em vez de rolar a lista de fases.
     // Na pausa ela continua visível, pra dar pra voltar/avançar antes de retomar.
     el.scrubberItem.hidden = !(state.mode === 'song' && name === 'pause');
+    el.vScrub.hidden = el.scrubberItem.hidden;
     setOptionsOpen(false);   // evita o menu de opções ficar flutuando por cima da tela nova
   }
 
@@ -596,6 +583,106 @@
     progress.prefs.speed = state.speed;
     saveProgressState();
     startSong(setupSong);
+  }
+
+  /* ---------------- gestos no palco: tocar pausa, arrastar na vertical navega ---------------- */
+
+  var DRAG_THRESHOLD = 10;   // px de movimento pra um toque virar arrasto
+
+  /**
+   * A área das notas caindo (acima do teclado) funciona como a "pista" de um vídeo:
+   *  - tocar/clicar e soltar rápido = pausa (ou continua, se já pausado);
+   *  - arrastar pra cima/baixo = navegar na música, como se segurasse a pista: puxar pra
+   *    baixo traz as notas pra frente (avança), puxar pra cima volta. Pausa sozinho, e as
+   *    notas acompanham o dedo 1:1 (mesma escala px/s em que caem).
+   * Pausado, o overlay (quase transparente) fica por cima do canvas — então o mesmo gesto
+   * é escutado no fundo do overlay também. Usa pointer events e não `click`: o input.js
+   * cancela o `touchstart` do canvas (lupa do Safari), e o iPhone deixa de gerar `click` lá.
+   */
+  function initHighwayGestures() {
+    var g = null;   // gesto em andamento: { x, y, t, songTime, dragging, elem, id }
+
+    function begin(e, elem) {
+      g = { x: e.clientX, y: e.clientY, t: performance.now(), songTime: state.songTime,
+            dragging: false, elem: elem, id: e.pointerId };
+      try { elem.setPointerCapture(e.pointerId); } catch (err) { /* ok */ }
+    }
+
+    el.canvas.addEventListener('pointerdown', function (e) {
+      var r = el.canvas.getBoundingClientRect();
+      if (e.clientY - r.top < PH.render.getLayout().pianoY && state.running) begin(e, el.canvas);
+    });
+    el.overlay.addEventListener('pointerdown', function (e) {
+      if (e.target === el.overlay && state.paused) begin(e, el.overlay);
+    });
+
+    function move(e) {
+      if (!g || e.pointerId !== g.id) return;
+      var dy = e.clientY - g.y;
+      if (!g.dragging) {
+        if (Math.abs(dy) < DRAG_THRESHOLD || state.mode !== 'song' || !state.timeline.length) return;
+        g.dragging = true;
+        pauseGame();
+      }
+      var pxPerSec = PH.render.getLayout().hitLine / LEAD_TIME;
+      seekTo(g.songTime + dy / pxPerSec);
+    }
+
+    function end(e) {
+      if (!g || e.pointerId !== g.id) return;
+      var tap = !g.dragging && performance.now() - g.t < 500 &&
+        Math.abs(e.clientX - g.x) + Math.abs(e.clientY - g.y) < 16;
+      var elem = g.elem;
+      g = null;
+      try { elem.releasePointerCapture(e.pointerId); } catch (err) { /* ok */ }
+      if (!tap) return;
+      if (elem === el.canvas && state.running) pauseGame();
+      else if (elem === el.overlay && state.paused) resumeGame();
+    }
+
+    [el.canvas, el.overlay].forEach(function (elem) {
+      elem.addEventListener('pointermove', move);
+      elem.addEventListener('pointerup', end);
+      elem.addEventListener('pointercancel', function (e) { if (g && e.pointerId === g.id) g = null; });
+    });
+  }
+
+  /**
+   * Barra de progresso na lateral direita do palco, na altura da pista de notas (longe do
+   * teclado): começo embaixo, fim em cima — o mesmo sentido em que as notas "vêm" (de cima).
+   * Arrastar/tocar nela pausa e pula pro ponto; ao continuar vem a contagem 3-2-1.
+   */
+  function initVerticalScrubber() {
+    var dragging = false;
+
+    function timeFromY(e) {
+      var r = el.vScrubTrack.getBoundingClientRect();
+      var frac = r.height > 0 ? 1 - (e.clientY - r.top) / r.height : 0;
+      return Math.max(0, Math.min(1, frac)) * state.songDuration;
+    }
+
+    el.vScrub.addEventListener('pointerdown', function (e) {
+      if (state.mode !== 'song' || !state.songDuration) return;
+      e.preventDefault();
+      e.stopPropagation();
+      pauseGame();
+      dragging = true;
+      el.vScrub.classList.add('dragging');
+      el.vScrub.setPointerCapture(e.pointerId);
+      seekTo(timeFromY(e));
+    });
+    el.vScrub.addEventListener('pointermove', function (e) {
+      if (dragging) seekTo(timeFromY(e));
+    });
+    function end(e) {
+      if (!dragging) return;
+      dragging = false;
+      el.vScrub.classList.remove('dragging');
+      try { el.vScrub.releasePointerCapture(e.pointerId); } catch (err) { /* ok */ }
+    }
+    el.vScrub.addEventListener('pointerup', end);
+    el.vScrub.addEventListener('pointercancel', end);
+    el.vScrub.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
   }
 
   /* ---------------- barra de progresso (voltar/avançar na música) ---------------- */
@@ -999,6 +1086,7 @@
     el.demoItem.hidden = !isSong;
     el.songLabelItem.hidden = !isSong;
     el.scrubberItem.hidden = !isSong;
+    el.vScrub.hidden = !isSong;
     document.body.classList.toggle('song-mode', isSong);   // mostra ⏪/⏩ (HUD e pausa), ver style.css
   }
 
@@ -1187,9 +1275,15 @@
 
   /** Atualiza a posição visual da barra de progresso a partir de `state.songTime`. */
   function updateScrubber() {
+    el.vScrub.hidden = el.scrubberItem.hidden;
     if (el.scrubberItem.hidden) return;
     var duration = state.songDuration || 0;
     var pct = duration > 0 ? Math.max(0, Math.min(1, state.songTime / duration)) * 100 : 0;
+    // Barra lateral: ocupa só a altura da pista de notas (acaba antes do teclado).
+    el.vScrub.style.height = Math.max(60, PH.render.getLayout().pianoY - 28) + 'px';
+    el.vScrubFill.style.height = pct + '%';
+    el.vScrubThumb.style.bottom = pct + '%';
+    el.vScrubTime.textContent = formatTime(state.songTime) + ' / ' + formatTime(duration);
     el.scrubFill.style.width = pct + '%';
     el.scrubThumb.style.left = pct + '%';
     el.scrubCurrent.textContent = formatTime(state.songTime);
