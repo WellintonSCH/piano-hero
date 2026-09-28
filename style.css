@@ -1227,6 +1227,17 @@ button.ghost:hover { color: var(--text); }
   html.compact #app { display: none; }
 }
 
+.rotate-sub {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.icon-circle svg { display: block; }
+
 .rotate-phone {
   font-size: 64px;
   animation: rotate-phone 2.2s ease-in-out infinite;
@@ -1239,7 +1250,8 @@ button.ghost:hover { color: var(--text); }
 /* Celular deitado: a tela tem ~360px de altura — HUD numa linha só e fina, barra de
    progresso enxuta (a faixa de repetir trecho fica pro PC), feedback por cima do palco. */
 @media (orientation: landscape) {
-  html.compact body { padding: 4px 10px; }
+  /* env(safe-area-*): no iPhone instalado como app (tela cheia), o notch fica na lateral. */
+  html.compact body { padding: 4px max(10px, env(safe-area-inset-right)) 4px max(10px, env(safe-area-inset-left)); }
   html.compact #app { gap: 4px; max-width: none; }
 
   html.compact #hud {

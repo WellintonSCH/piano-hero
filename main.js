@@ -154,6 +154,7 @@
 
     document.getElementById('btnFree').addEventListener('click', startFree);
     document.getElementById('btnHelp').addEventListener('click', function () { showScreen('help'); });
+    initFullscreen();
     document.getElementById('btnBackHomeFromHelp').addEventListener('click', showHome);
     document.getElementById('btnPlayNormal').addEventListener('click', function () { playSongAs('normal'); });
     document.getElementById('btnPlayWait').addEventListener('click', function () { playSongAs('wait'); });
@@ -327,6 +328,63 @@
     reset();
     renderLevelList();   // a tela inicial já abre com a lista de fases
     requestAnimationFrame(loop);
+  }
+
+  /* ---------------- tela cheia ---------------- */
+
+  /**
+   * Tela cheia pela Fullscreen API + trava em paisagem (o jogo no celular é deitado).
+   * Só funciona dentro de um gesto do usuário, então: no celular, entra sozinha no
+   * PRIMEIRO toque da página (uma vez só — se o jogador sair de propósito, não fica
+   * forçando de novo), e o botão ⛶ do mapa liga/desliga quando quiser.
+   * O Safari do iPhone não tem Fullscreen API pra páginas (só pra vídeo): lá o botão
+   * abre a ajuda, que explica o "Adicionar à Tela de Início" (manifest.webmanifest +
+   * metas apple-* no index.html fazem o app instalado abrir em tela cheia).
+   */
+  function fullscreenSupported() {
+    var d = document.documentElement;
+    return !!(d.requestFullscreen || d.webkitRequestFullscreen);
+  }
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function enterFullscreen() {
+    if (isFullscreen() || !fullscreenSupported()) return;
+    var d = document.documentElement;
+    try {
+      var p = d.requestFullscreen ? d.requestFullscreen({ navigationUI: 'hide' }) : d.webkitRequestFullscreen();
+      if (p && p.then) p.then(lockLandscape).catch(function () { /* recusado pelo navegador */ });
+      else lockLandscape();
+    } catch (e) { /* sem suporte de verdade */ }
+  }
+
+  function lockLandscape() {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(function () { /* só Android, e só em tela cheia */ });
+    }
+  }
+
+  function toggleFullscreen() {
+    if (!fullscreenSupported()) { showScreen('help'); return; }
+    if (isFullscreen()) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      enterFullscreen();
+    }
+  }
+
+  function initFullscreen() {
+    document.getElementById('btnFullscreen').addEventListener('click', toggleFullscreen);
+    document.getElementById('rotateHint').addEventListener('click', enterFullscreen);
+    if (PH.notes.COMPACT && fullscreenSupported()) {
+      var once = function () {
+        document.removeEventListener('click', once, true);
+        enterFullscreen();
+      };
+      document.addEventListener('click', once, true);
+    }
   }
 
   /* ---------------- navegação entre telas ---------------- */
