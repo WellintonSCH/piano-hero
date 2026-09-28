@@ -41,7 +41,9 @@ window.PianoHero = window.PianoHero || {};
         ? Math.round(Math.max(160, viewportHeight() - canvas.getBoundingClientRect().top - 6))
         : Math.round(Math.min(760, Math.max(cssH, window.innerHeight - 330)));
     }
-    var dpr = window.devicePixelRatio || 1;
+    // iPhone tem tela 3x: desenhar a pista inteira em 3x a cada quadro é caro e não se vê
+    // diferença de 2x pra 3x num jogo em movimento — no celular limita em 2x.
+    var dpr = Math.min(window.devicePixelRatio || 1, PH.notes.COMPACT ? 2 : 4);
 
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
@@ -64,8 +66,15 @@ window.PianoHero = window.PianoHero || {};
    * altera nenhum deles, então não entra em laço.
    */
   var lastFitKey = '';
-  function fitCheck() {
+  var lastFitAt = -1e9;
+  function fitCheck(now) {
     if (!PH.notes.COMPACT || !canvas.parentNode.clientWidth) return;   // oculto (celular em pé)
+    // No máximo ~4x por segundo: getBoundingClientRect() força o navegador a fechar o layout,
+    // e a cada quadro isso pesava no celular. 250ms de atraso num ajuste de tamanho não se nota.
+    if (now !== undefined) {
+      if (now - lastFitAt < 250) return;
+      lastFitAt = now;
+    }
     var key = canvas.parentNode.clientWidth + ',' + Math.round(canvas.getBoundingClientRect().top) +
       ',' + Math.round(viewportHeight());
     if (key !== lastFitKey) {
@@ -198,7 +207,6 @@ window.PianoHero = window.PianoHero || {};
    *  - flashes[midi] = { t, good }
    */
   function draw(state, dt) {
-    fitCheck();
     updateParticles(dt);
 
     var W = layout.W, H = layout.H;
@@ -430,6 +438,7 @@ window.PianoHero = window.PianoHero || {};
 
   PH.render = {
     init: init,
+    fitCheck: fitCheck,
     getLayout: getLayout,
     keyAt: keyAt,
     burst: burst,

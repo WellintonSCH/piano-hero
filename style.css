@@ -1419,3 +1419,24 @@ html.compact, html.compact body {
   overflow: hidden;
   overscroll-behavior: none;
 }
+
+/* Celular: sem desfoque atrás dos menus. backdrop-filter sobre um canvas é um dos efeitos
+   mais caros pra GPU do celular (travava ao abrir o mapa); o fundo já é quase opaco. */
+html.compact #overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* Pulso da fase atual sem animar box-shadow (repinta a cada quadro): um anel separado que
+   só cresce e some (transform/opacity, a GPU faz sozinha). */
+html.compact .map-bubble.current { animation: none; }
+html.compact .map-bubble.current::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3px solid rgba(111, 155, 255, .7);
+  animation: map-ring 1.6s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes map-ring {
+  0%   { transform: scale(.95); opacity: .9; }
+  100% { transform: scale(1.35); opacity: 0; }
+}

@@ -251,8 +251,15 @@ window.PianoHero = window.PianoHero || {};
   function resumeOnGesture() {
     if (ctx && ctx.state !== 'running') ctx.resume();
   }
-  document.addEventListener('touchend', resumeOnGesture, { passive: true });
-  document.addEventListener('click', resumeOnGesture);
+  // Também no começo do toque (pointerdown, fase de captura: pega toques no teclado do
+  // canvas, cujo touchstart é cancelado), e ao voltar pra aba/app — o iPhone deixa o áudio
+  // "interrompido" depois de bloquear a tela, trocar de app ou quando o aparelho engasga.
+  document.addEventListener('touchend', resumeOnGesture, { passive: true, capture: true });
+  document.addEventListener('pointerdown', resumeOnGesture, true);
+  document.addEventListener('click', resumeOnGesture, true);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) resumeOnGesture();
+  });
 
   PH.audio = {
     unlock: ensure,

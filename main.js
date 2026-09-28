@@ -1280,6 +1280,11 @@
     var duration = state.songDuration || 0;
     var pct = duration > 0 ? Math.max(0, Math.min(1, state.songTime / duration)) * 100 : 0;
     // Barra lateral: ocupa só a altura da pista de notas (acaba antes do teclado).
+    // Só mexe no DOM quando algo visível mudou (a cada quadro isso forçava o navegador a
+    // recalcular o layout à toa — pesado no celular).
+    var key = Math.round(pct * 10) + '|' + Math.floor(state.songTime) + '|' + PH.render.getLayout().pianoY;
+    if (key === lastScrubKey) return;
+    lastScrubKey = key;
     el.vScrub.style.height = Math.max(60, PH.render.getLayout().pianoY - 28) + 'px';
     el.vScrubFill.style.height = pct + '%';
     el.vScrubThumb.style.bottom = pct + '%';
@@ -1289,6 +1294,7 @@
     el.scrubCurrent.textContent = formatTime(state.songTime);
     el.scrubTotal.textContent = formatTime(duration);
   }
+  var lastScrubKey = '';
 
   /**
    * Recalcula quais notas aparecem na tela e onde, a partir do relógio da música.
@@ -1743,18 +1749,31 @@
   }
 
   var lastTime = 0;
+  var lastMenuOpen = null;
   function loop(now) {
     var rawDt = lastTime ? (now - lastTime) / 1000 : 0;
     var dt = Math.min(rawDt, 0.05);
     lastTime = now;
 
-    update(dt, rawDt);
-    if (state.mode === 'song') {
-      updateCountdown();
-      syncSongNotes();
-      if (!state.scrubbing) updateScrubber();
+    // Com um menu cobrindo o palco (mapa, escolher modo, ajuda, ranking, fim de fase) não há
+    // nada pra animar: pular o desenho do canvas (e a ~60 quadros/s de trabalho) deixa o
+    // celular leve nos menus — antes o jogo redesenhava a pista inteira por trás do menu
+    // o tempo todo, e isso travava o celular. Na pausa continua desenhando (as notas ficam
+    // visíveis e andam ao navegar).
+    var menuOpen = !el.overlay.hidden && el.screenPause.hidden;
+    // Abrir/fechar menu mostra/esconde a HUD e muda o espaço do palco: reajusta na hora
+    // (sem o intervalo do fitCheck), senão o teclado sairia cortado por um instante.
+    PH.render.fitCheck(menuOpen !== lastMenuOpen ? undefined : now);
+    lastMenuOpen = menuOpen;
+    if (!menuOpen) {
+      update(dt, rawDt);
+      if (state.mode === 'song') {
+        updateCountdown();
+        syncSongNotes();
+        if (!state.scrubbing) updateScrubber();
+      }
+      PH.render.draw(state, dt);
     }
-    PH.render.draw(state, dt);
     requestAnimationFrame(loop);
   }
 
