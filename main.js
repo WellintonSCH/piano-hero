@@ -143,6 +143,10 @@
     el.setupRankingSummary = document.getElementById('setupRankingSummary');
     el.setupHand = document.getElementById('setupHand');
     el.setupHandSection = document.getElementById('setupHandSection');
+    el.btnPlayNormal = document.getElementById('btnPlayNormal');
+    el.btnPlayWait = document.getElementById('btnPlayWait');
+    el.btnPlayDemoText = document.querySelector('#btnPlayDemo .setup-text');
+    el.setupListenHint = document.getElementById('setupListenHint');
     el.setupHandHint = document.getElementById('setupHandHint');
     el.setupHand.addEventListener('click', function (e) {
       var b = e.target.closest('[data-hand]');
@@ -308,6 +312,8 @@
     });
 
     el.demoToggle.addEventListener('change', function () {
+      // Música "tocar junto" (celular) só existe em demonstração — ver listenOnly().
+      if (state.mode === 'song' && listenOnly(state.song)) el.demoToggle.checked = true;
       state.demoMode = el.demoToggle.checked;
       progress.prefs.demo = state.demoMode;
       saveProgressState();
@@ -492,12 +498,20 @@
   var MAP_K = [0.5, 1, 0.5, 0];   // altura relativa (0 = topo, 1 = base) de cada bolha, repetindo o zigue-zague
 
   /**
-   * Fases que aparecem no mapa. No celular (teclado de 1 oitava) só as que cabem inteiras
-   * nele (`PH.notes.songFits`) — músicas largas espremidas numa oitava ficariam
-   * irreconhecíveis; as de celular foram escritas pra essa faixa (ver songs.js).
+   * Fases que aparecem no mapa. No celular (teclado de 1 oitava) as que cabem inteiras
+   * nele (`PH.notes.songFits`) vêm primeiro e são jogáveis normalmente; as largas demais
+   * (espremidas numa oitava ficariam irreconhecíveis) vêm depois, como músicas "pra
+   * tocar junto" (`listenOnly()`): só em demonstração, sem pontos, com o teclado alargado
+   * pelas oitavas que a música usa (ver startSong).
    */
   function availableSongs() {
-    return PH.notes.COMPACT ? PH.songs.filter(PH.notes.songFits) : PH.songs;
+    if (!PH.notes.COMPACT) return PH.songs;
+    return PH.songs.filter(PH.notes.songFits)
+      .concat(PH.songs.filter(function (s) { return !PH.notes.songFits(s); }));
+  }
+
+  function listenOnly(song) {
+    return !!song && PH.notes.COMPACT && !PH.notes.songFits(song);
   }
 
   function renderLevelList() {
@@ -507,12 +521,13 @@
     for (var i = 0; i < songs.length; i++) {
       var song = songs[i];
       var best = progress.best[song.id];
-      if (!best && current === -1) current = i;
-      var cls = best ? ' done' : (i === current ? ' current' : '');
+      var listen = listenOnly(song);
+      if (!best && !listen && current === -1) current = i;
+      var cls = listen ? ' listen' : best ? ' done' : (i === current ? ' current' : '');
       html += '<div class="map-node"><div class="map-stop" style="--k:' + MAP_K[i % MAP_K.length] + '">' +
         '<button type="button" class="map-bubble' + cls + '" data-index="' + i + '"' +
-        ' aria-label="Fase ' + (i + 1) + ': ' + song.title + '">' +
-        '<span class="map-num">' + (i + 1) + '</span>' +
+        ' aria-label="' + (listen ? 'Tocar junto' : 'Fase ' + (i + 1)) + ': ' + song.title + '">' +
+        '<span class="map-num">' + (listen ? '&#9835;' : i + 1) + '</span>' +
         (best ? '<span class="map-best">' + best.accuracy + '%</span>' : '') +
         '</button>' +
         '<span class="map-label">' + song.title + '</span>' +
@@ -576,8 +591,18 @@
     el.setupTitle.textContent = song.title;
     el.setupSubtitle.textContent = song.subtitle || '';
 
+    // Música larga no celular: só a demonstração (tocar junto, sem pontos) — ver listenOnly().
+    var listen = listenOnly(song);
+    el.btnPlayNormal.hidden = listen;
+    el.btnPlayWait.hidden = listen;
+    el.setupRankingBox.hidden = listen;
+    el.setupListenHint.hidden = !listen;
+    el.btnPlayDemoText.innerHTML = listen
+      ? '<strong>Tocar junto</strong><small>Música completa, sem contar pontos</small>'
+      : '<strong>Demonstração</strong><small>Ouvir e ver antes de tentar</small>';
+
     var hands = PH.fingering.handsUsed(song);
-    var twoHands = hands.R && hands.L;
+    var twoHands = hands.R && hands.L && !listen;
     el.setupHandSection.hidden = !twoHands;
     if (!twoHands) state.practiceHand = 'both';
     el.setupHandHint.textContent = 'Praticando uma mão, a outra toca sozinha no tempo certo.';
@@ -1111,6 +1136,7 @@
   function startFree() {
     state.mode = 'free';
     state.song = null;
+    setKeyboardFor(null);
     sequence.setMode(el.difficulty.value);
     PH.audio.unlock();
     watchPianoLoad();
@@ -1123,6 +1149,12 @@
   function startSong(song) {
     state.mode = 'song';
     state.song = song;
+    setKeyboardFor(song);
+    if (listenOnly(song)) {
+      // Teclado alargado com teclas estreitas: só dá pra acompanhar, não pra ser cobrado.
+      state.demoMode = true;
+      el.demoToggle.checked = true;
+    }
     clearLoop();   // marcações de trecho são por música — não fazem sentido levadas pra outra
     PH.audio.unlock();
     watchPianoLoad();
@@ -1131,6 +1163,22 @@
     reset();
     el.overlay.hidden = true;
     state.running = true;
+  }
+
+  /**
+   * Celular: teclado padrão (1 oitava) pras fases normais e pro modo livre; alargado pelas
+   * oitavas da música (PH.notes.songRange) pras músicas "tocar junto". No PC não muda nada.
+   */
+  function setKeyboardFor(song) {
+    if (!PH.notes.COMPACT) return;
+    var changed;
+    if (listenOnly(song)) {
+      var r = PH.notes.songRange(song);
+      changed = PH.notes.setRange(r.min, r.max);
+    } else {
+      changed = PH.notes.resetRange();
+    }
+    if (changed) PH.render.relayout();
   }
 
   /** O seletor de velocidade mostra BPM de verdade (calculado a partir do BPM da fase

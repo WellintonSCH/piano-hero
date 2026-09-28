@@ -443,6 +443,7 @@ window.PianoHero = window.PianoHero || {};
     init: init,
     fitCheck: fitCheck,
     getLayout: getLayout,
+    relayout: resize,   // faixa do teclado mudou (PH.notes.setRange): refaz a geometria
     keyAt: keyAt,
     burst: burst,
     ring: ring,

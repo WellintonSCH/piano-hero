@@ -23,25 +23,33 @@ window.PianoHero = window.PianoHero || {};
     var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     return !!coarse && Math.min(screen.width, screen.height) < 600;
   })();
-  var MIN_MIDI = COMPACT ? 60 : 36, MAX_MIDI = COMPACT ? 72 : 96;
+  var FULL_MIN = 36, FULL_MAX = 96;
+  var DEFAULT_MIN = COMPACT ? 60 : FULL_MIN, DEFAULT_MAX = COMPACT ? 72 : FULL_MAX;
+  var MIN_MIDI = DEFAULT_MIN, MAX_MIDI = DEFAULT_MAX;
   // Classe no <html> pro CSS montar o layout de celular (deitado, com aviso de girar).
   if (COMPACT) document.documentElement.classList.add('compact');
   var WHITE_PC = [0, 2, 4, 5, 7, 9, 11];   // classes de altura das teclas brancas (Dó Ré Mi Fá Sol Lá Si)
   var BLACK_PC = [1, 3, 6, 8, 10];         // classes de altura das teclas pretas
 
+  // Arrays preenchidos no lugar (não recriados) por buildKeys(): render.js/input.js leem
+  // PH.notes.WHITE/BLACK a cada uso, então trocar a faixa (setRange) vale na hora.
   var WHITE = [];
-  for (var m = MIN_MIDI; m <= MAX_MIDI; m++) {
-    if (WHITE_PC.indexOf(m % 12) !== -1) WHITE.push(m);
-  }
+  var BLACK = [];   // cada preta fica na divisa depois da branca de índice `after`
 
-  // Cada preta fica na divisa depois da branca de índice `after`.
-  var BLACK = [];
-  WHITE.forEach(function (midi, i) {
-    var up = midi + 1;
-    if (up <= MAX_MIDI && BLACK_PC.indexOf(up % 12) !== -1) {
-      BLACK.push({ midi: up, after: i });
+  function buildKeys() {
+    WHITE.length = 0;
+    BLACK.length = 0;
+    for (var m = MIN_MIDI; m <= MAX_MIDI; m++) {
+      if (WHITE_PC.indexOf(m % 12) !== -1) WHITE.push(m);
     }
-  });
+    WHITE.forEach(function (midi, i) {
+      var up = midi + 1;
+      if (up <= MAX_MIDI && BLACK_PC.indexOf(up % 12) !== -1) {
+        BLACK.push({ midi: up, after: i });
+      }
+    });
+  }
+  buildKeys();
 
   var NAMES = ['Dó', 'Dó#', 'Ré', 'Ré#', 'Mi', 'Fá', 'Fá#', 'Sol', 'Sol#', 'Lá', 'Lá#', 'Si'];
 
@@ -77,7 +85,8 @@ window.PianoHero = window.PianoHero || {};
    * teclado desenhado — 0 se já cabe, `null` se não cabe de jeito nenhum (extensão maior
    * que o teclado). Transpor a música toda, e não nota a nota, preserva a melodia.
    */
-  function songShift(song) {
+  function songShift(song, min, max) {
+    if (min === undefined) { min = MIN_MIDI; max = MAX_MIDI; }
     var lo = Infinity, hi = -Infinity;
     song.notes.forEach(function (n) {
       (Array.isArray(n) ? n : [n]).forEach(function (m) {
@@ -86,12 +95,43 @@ window.PianoHero = window.PianoHero || {};
       });
     });
     for (var k = 0; Math.abs(k) <= 48; k = k <= 0 ? -k + 12 : -k) {
-      if (lo + k >= MIN_MIDI && hi + k <= MAX_MIDI) return k;
+      if (lo + k >= min && hi + k <= max) return k;
     }
     return null;
   }
 
-  function songFits(song) { return songShift(song) !== null; }
+  /** Cabe no teclado PADRÃO (1 oitava no celular), mesmo se a faixa estiver alargada agora. */
+  function songFits(song) { return songShift(song, DEFAULT_MIN, DEFAULT_MAX) !== null; }
+
+  /**
+   * Celular, músicas largas demais pra oitava única: dá pra ver/ouvir a música completa
+   * (modo demonstração, tocando junto sem pontos) com o teclado alargado só pelas oitavas
+   * que ela usa — de Dó a Dó, dentro do teclado completo (Dó2–Dó7). Teclas mais estreitas,
+   * mas é pra acompanhar, não pra ser cobrado. `resetRange()` volta ao teclado padrão.
+   */
+  function songRange(song) {
+    var lo = Infinity, hi = -Infinity;
+    song.notes.forEach(function (n) {
+      (Array.isArray(n) ? n : [n]).forEach(function (m) {
+        if (m < lo) lo = m;
+        if (m > hi) hi = m;
+      });
+    });
+    lo = Math.max(FULL_MIN, Math.floor(lo / 12) * 12);
+    hi = Math.min(FULL_MAX, Math.ceil(hi / 12) * 12);
+    if (hi - lo < 12) hi = lo + 12;
+    return { min: lo, max: hi };
+  }
+
+  function setRange(min, max) {
+    if (min === MIN_MIDI && max === MAX_MIDI) return false;
+    MIN_MIDI = PH.notes.MIN_MIDI = min;
+    MAX_MIDI = PH.notes.MAX_MIDI = max;
+    buildKeys();
+    return true;
+  }
+
+  function resetRange() { return setRange(DEFAULT_MIN, DEFAULT_MAX); }
 
   /**
    * Traz uma nota pra dentro do teclado desenhado subindo/descendo de oitava em oitava —
@@ -146,6 +186,9 @@ window.PianoHero = window.PianoHero || {};
     fitMidi: fitMidi,
     songShift: songShift,
     songFits: songFits,
+    songRange: songRange,
+    setRange: setRange,
+    resetRange: resetRange,
     WHITE: WHITE,
     BLACK: BLACK,
     POOLS: POOLS,

@@ -1137,6 +1137,13 @@ button.ghost:hover { color: var(--text); }
   border-color: rgba(56, 217, 150, .7);
 }
 
+/* Celular: música completa (larga demais pra 1 oitava) só pra tocar junto, sem pontos. */
+.map-bubble.listen {
+  border-style: dashed;
+  border-color: rgba(255, 215, 64, .7);
+}
+.map-bubble.listen .map-num { color: #ffd740; }
+
 .map-bubble.current {
   background: radial-gradient(circle at 35% 30%, #9dbaff, var(--accent-2));
   border-color: #fff;
