@@ -32,10 +32,11 @@ window.PianoHero = window.PianoHero || {};
     // de progresso e rodapé (~330px), pra notas terem mais espaço pra cair e os menus
     // (que ficam dentro do palco) caberem sem rolar.
     // Deitado (paisagem, o jeito de jogar no celular): a tela é baixa (~360px), então o
-    // palco ocupa quase tudo, descontando só a HUD em uma linha e a barra de progresso (~84px).
+    // palco ocupa quase tudo, descontando só a HUD em uma linha (~52px; no celular não há
+    // barra de progresso, ver style.css).
     if (PH.notes.COMPACT) {
       cssH = window.innerWidth > window.innerHeight
-        ? Math.round(Math.max(200, window.innerHeight - 84))
+        ? Math.round(Math.max(200, window.innerHeight - 52))
         : Math.round(Math.min(760, Math.max(cssH, window.innerHeight - 330)));
     }
     var dpr = window.devicePixelRatio || 1;

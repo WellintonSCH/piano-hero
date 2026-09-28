@@ -77,21 +77,24 @@ window.PianoHero = window.PianoHero || {};
   }
 
   function initPointer(canvas) {
-    var activeMidi = null;
+    // Uma nota por dedo (pointerId): no celular dá pra tocar acordes com dois dedos, e
+    // soltar um dedo não solta a nota do outro.
+    var activeByPointer = {};
 
     canvas.addEventListener('pointerdown', function (e) {
       var r = canvas.getBoundingClientRect();
       var midi = PH.render.keyAt(e.clientX - r.left, e.clientY - r.top);
       if (midi === null) return;
       e.preventDefault();
-      activeMidi = midi;
+      activeByPointer[e.pointerId] = midi;
       emit(midi, 'pointer', e.timeStamp);
     });
 
-    function release() {
-      if (activeMidi === null) return;
-      emitRelease(activeMidi, 'pointer');
-      activeMidi = null;
+    function release(e) {
+      var midi = activeByPointer[e.pointerId];
+      if (midi === undefined) return;
+      delete activeByPointer[e.pointerId];
+      emitRelease(midi, 'pointer');
     }
 
     window.addEventListener('pointerup', release);
@@ -99,6 +102,12 @@ window.PianoHero = window.PianoHero || {};
     canvas.addEventListener('pointerleave', release);
 
     canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+    // Safari/iPhone: segurar o dedo numa tecla abria a lupa/seleção de texto e dava zoom
+    // (e toque duplo rápido também dá zoom). `user-select`/`touch-action` no CSS não
+    // bastam no iOS — cancelar o `touchstart` do canvas é o que impede esses gestos do
+    // sistema. Pointer Events (usados acima) continuam chegando normalmente.
+    canvas.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
   }
 
   /**

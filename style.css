@@ -1303,3 +1303,20 @@ button.ghost:hover { color: var(--text); }
    (min-height: 0), senão ele colapsa pra 0. No celular deitado ele ocupa o que sobra. */
 .home-card .level-map { height: 320px; min-height: 200px; }
 html.compact .home-card .level-map { height: auto; flex: 1 1 auto; min-height: 170px; }
+
+/* ---------- Voltar/avançar alguns segundos (⏪ / ⏩) ---------- */
+
+/* Só no modo fase (body.song-mode, ver updateModeUI()): no topo (HUD) e na pausa. */
+.seek-btn { display: none; }
+body.song-mode .hud-controls .seek-btn { display: inline-block; font-weight: 700; }
+body.song-mode .icon-controls .seek-btn { display: grid; }
+
+/* Toque duplo rápido em botões/HUD não dá zoom (o canvas já tem touch-action: none). */
+html { touch-action: manipulation; }
+
+/* Celular: sem barra de progresso — ficava colada nas teclas e dava pra esbarrar tocando.
+   Navegar na música é pelos ⏪/⏩ no topo e na pausa. Reiniciar/Menu também saem do topo:
+   já estão na pausa (tocar na tela). */
+html.compact #scrubberItem { display: none !important; }
+html.compact #restart, html.compact #menuBtn { display: none; }
+html.compact .icon-controls { gap: 12px; }

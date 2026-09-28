@@ -186,6 +186,75 @@ window.PianoHero = window.PianoHero || {};
     2
   );
 
+  /* ---- Músicas pensadas pro celular: cabem inteiras em UMA oitava (Dó4–Dó5), a faixa
+   * do teclado compacto (ver notes.js). Melodias tradicionais/domínio público. ---- */
+
+  // "Seu Lobato tinha um sítio" (Old MacDonald), em Fá: estrofe + "ia, ia, ô".
+  var lobato = repeat(
+    [
+      F4, F4, F4, C4, D4, D4, C4, A4, A4, G4, G4, F4,
+      C4, F4, F4, F4, C4, D4, D4, C4, A4, A4, G4, G4, F4
+    ],
+    [
+      QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, HALF, QUARTER, QUARTER, QUARTER, QUARTER, WHOLE,
+      QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, HALF, QUARTER, QUARTER, QUARTER, QUARTER, WHOLE
+    ],
+    2
+  );
+
+  // "Hänschen klein" (canção folclórica alemã): só cinco notas, Dó a Sol.
+  var hanschen = repeat(
+    [
+      G4, E4, E4, F4, D4, D4, C4, D4, E4, F4, G4, G4, G4,
+      G4, E4, E4, F4, D4, D4, C4, E4, G4, G4, C4,
+      D4, D4, D4, D4, D4, E4, F4, E4, E4, E4, E4, E4, F4, G4,
+      G4, E4, E4, F4, D4, D4, C4, E4, G4, G4, C4
+    ],
+    [
+      QUARTER, QUARTER, HALF, QUARTER, QUARTER, HALF, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, HALF,
+      QUARTER, QUARTER, HALF, QUARTER, QUARTER, HALF, QUARTER, QUARTER, QUARTER, QUARTER, WHOLE,
+      QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, HALF, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER, HALF,
+      QUARTER, QUARTER, HALF, QUARTER, QUARTER, HALF, QUARTER, QUARTER, QUARTER, QUARTER, WHOLE
+    ],
+    1
+  );
+
+  // "When the Saints Go Marching In" (spiritual tradicional): Dó Mi Fá Sol.
+  var saints = repeat(
+    [
+      C4, E4, F4, G4,
+      C4, E4, F4, G4,
+      C4, E4, F4, G4, E4, C4, E4, D4,
+      E4, E4, D4, C4, C4, E4, G4, G4, F4,
+      E4, F4, G4, E4, C4, D4, C4
+    ],
+    [
+      QUARTER, QUARTER, QUARTER, WHOLE,
+      QUARTER, QUARTER, QUARTER, WHOLE,
+      QUARTER, QUARTER, QUARTER, HALF, HALF, HALF, HALF, WHOLE,
+      QUARTER, QUARTER, QUARTER, DOTTED_HALF, QUARTER, HALF, QUARTER, QUARTER, WHOLE,
+      QUARTER, QUARTER, HALF, HALF, HALF, HALF, WHOLE
+    ],
+    2
+  );
+
+  // Canção de ninar de Brahms (Wiegenlied), em Dó, 3/4 — arranjo simplificado.
+  var brahms = repeat(
+    [
+      E4, E4, G4, E4, E4, G4, E4, G4, C5, B4, A4, A4, G4,
+      D4, E4, F4, D4, D4, E4, F4, D4, F4, B4, A4, G4, B4, C5,
+      C4, C4, C5, A4, F4, G4, E4, C4, F4, G4, A4, G4,
+      C4, C4, C5, A4, F4, G4, F4, E4, D4, C4
+    ],
+    [
+      EIGHTH, EIGHTH, HALF, EIGHTH, EIGHTH, HALF, EIGHTH, EIGHTH, QUARTER, QUARTER, QUARTER, QUARTER, QUARTER,
+      EIGHTH, EIGHTH, QUARTER, QUARTER, EIGHTH, EIGHTH, HALF, EIGHTH, EIGHTH, EIGHTH, EIGHTH, QUARTER, QUARTER, HALF,
+      EIGHTH, EIGHTH, HALF, EIGHTH, EIGHTH, HALF, EIGHTH, EIGHTH, QUARTER, EIGHTH, EIGHTH, DOTTED_HALF,
+      EIGHTH, EIGHTH, HALF, EIGHTH, EIGHTH, HALF, QUARTER, QUARTER, QUARTER, DOTTED_HALF
+    ],
+    1
+  );
+
   var jingle = repeat(
     [
       E4, E4, E4, E4, E4, E4, E4, G4, C4, D4, E4,
@@ -287,6 +356,42 @@ window.PianoHero = window.PianoHero || {};
       timeSignature: [4, 4],
       notes: ode.notes,
       durations: ode.durations
+    },
+    {
+      id: 'hanschen',
+      title: 'Hänschen Klein',
+      subtitle: 'canção folclórica alemã — só 5 notas',
+      bpm: 108,
+      timeSignature: [4, 4],
+      notes: hanschen.notes,
+      durations: hanschen.durations
+    },
+    {
+      id: 'lobato',
+      title: 'Seu Lobato Tinha um Sítio',
+      subtitle: 'Old MacDonald — ia, ia, ô',
+      bpm: 112,
+      timeSignature: [4, 4],
+      notes: lobato.notes,
+      durations: lobato.durations
+    },
+    {
+      id: 'saints',
+      title: 'When the Saints',
+      subtitle: 'spiritual tradicional — Oh When the Saints Go Marching In',
+      bpm: 120,
+      timeSignature: [4, 4],
+      notes: saints.notes,
+      durations: saints.durations
+    },
+    {
+      id: 'brahms',
+      title: 'Canção de Ninar',
+      subtitle: 'Brahms — Wiegenlied, em 3/4',
+      bpm: 96,
+      timeSignature: [3, 4],
+      notes: brahms.notes,
+      durations: brahms.durations
     },
     {
       id: 'jingle',

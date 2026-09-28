@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Piano Hero</title>
 <!-- Instalar como app ("Adicionar à tela inicial"): abre sem a barra do navegador, em
      tela cheia e deitado. No iPhone é o ÚNICO jeito de tela cheia — o Safari do iPhone
@@ -61,6 +61,9 @@
     <span id="demoBadge" class="demo-badge" hidden>▶ Demonstração — só observe</span>
     <div class="hud-spacer"></div>
     <div class="hud-controls">
+      <!-- Voltar/avançar alguns segundos (só modo fase): no topo, longe das teclas. -->
+      <button id="seekBackBtn" type="button" class="seek-btn" aria-label="Voltar 5 segundos" title="Voltar 5 segundos">⏪ 5s</button>
+      <button id="seekFwdBtn" type="button" class="seek-btn" aria-label="Avançar 5 segundos" title="Avançar 5 segundos">5s ⏩</button>
       <div class="options-wrap">
         <button id="optionsBtn" type="button" class="icon-btn" aria-haspopup="true" aria-expanded="false">
           ⚙ Opções
@@ -217,7 +220,9 @@
       <div class="overlay-card pause-card" id="screen-pause" hidden>
         <div class="icon-controls">
           <button id="btnMenuFromPause" type="button" class="icon-circle ghost" aria-label="Voltar para as fases" title="Voltar para as fases">🗺️</button>
+          <button id="btnSeekBackPause" type="button" class="icon-circle ghost seek-btn" aria-label="Voltar 5 segundos" title="Voltar 5 segundos">⏪</button>
           <button id="btnResume" type="button" class="icon-circle primary" aria-label="Continuar" title="Continuar">▶</button>
+          <button id="btnSeekFwdPause" type="button" class="icon-circle ghost seek-btn" aria-label="Avançar 5 segundos" title="Avançar 5 segundos">⏩</button>
           <button id="btnRestartFromPause" type="button" class="icon-circle ghost" aria-label="Reiniciar" title="Reiniciar">↺</button>
         </div>
       </div>

@@ -24,6 +24,7 @@
   var PERFECT_WINDOW = 0.12; // dentro disso conta como acerto "perfeito" (mais pontos)
   var PRE_ROLL = 3;          // segundos de preparo (contagem 3-2-1) antes do tempo 0 da música
   var RESUME_COUNTDOWN = 3;  // segundos de contagem regressiva ao continuar depois de uma pausa
+  var SEEK_STEP = 5;         // segundos por toque nos botões ⏪ / ⏩
   var MAX_SCORES = 5;        // quantas tentativas cada fase guarda no próprio ranking
 
   var el = {};
@@ -198,12 +199,29 @@
     initLoopTrack();
 
     // Pausar como num vídeo: tocar/clicar no meio do palco (a área das notas caindo, acima
-    // do teclado — o teclado continua sendo pra tocar notas). Escuta `click` (não
-    // `pointerdown`) pra um arrasto não pausar sem querer.
-    el.canvas.addEventListener('click', function (e) {
-      if (!state.running) return;
+    // do teclado — o teclado continua sendo pra tocar notas). Um "toque" = soltar perto de
+    // onde apertou, rápido (arrasto não pausa). Usa pointerdown/up e não `click`: o input.js
+    // cancela o `touchstart` do canvas (pra o Safari não abrir a lupa de seleção ao segurar
+    // uma tecla), e com isso o iPhone deixa de gerar `click` no canvas.
+    var tapStart = null;
+    el.canvas.addEventListener('pointerdown', function (e) {
       var r = el.canvas.getBoundingClientRect();
-      if (e.clientY - r.top < PH.render.getLayout().pianoY) pauseGame();
+      tapStart = (e.clientY - r.top < PH.render.getLayout().pianoY)
+        ? { x: e.clientX, y: e.clientY, t: performance.now() } : null;
+    });
+    el.canvas.addEventListener('pointerup', function (e) {
+      if (!tapStart || !state.running) return;
+      var moved = Math.abs(e.clientX - tapStart.x) + Math.abs(e.clientY - tapStart.y);
+      if (moved < 16 && performance.now() - tapStart.t < 500) pauseGame();
+      tapStart = null;
+    });
+    // ⏪ / ⏩: voltar/avançar alguns segundos. Ficam no topo (HUD) e na pausa — longe das
+    // teclas, pra não esbarrar tocando (a barra de progresso fica só no PC).
+    ['seekBackBtn', 'btnSeekBackPause'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function () { seekBy(-SEEK_STEP); });
+    });
+    ['seekFwdBtn', 'btnSeekFwdPause'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', function () { seekBy(SEEK_STEP); });
     });
     // Na pausa, tocar fora dos botões (no "vídeo" parado) também continua.
     el.overlay.addEventListener('click', function (e) {
@@ -460,11 +478,21 @@
    */
   var MAP_K = [0.5, 1, 0.5, 0];   // altura relativa (0 = topo, 1 = base) de cada bolha, repetindo o zigue-zague
 
+  /**
+   * Fases que aparecem no mapa. No celular (teclado de 1 oitava) só as que cabem inteiras
+   * nele (`PH.notes.songFits`) — músicas largas espremidas numa oitava ficariam
+   * irreconhecíveis; as de celular foram escritas pra essa faixa (ver songs.js).
+   */
+  function availableSongs() {
+    return PH.notes.COMPACT ? PH.songs.filter(PH.notes.songFits) : PH.songs;
+  }
+
   function renderLevelList() {
     var current = -1;
+    var songs = availableSongs();
     var html = '<svg class="map-path" aria-hidden="true"><path/></svg>';
-    for (var i = 0; i < PH.songs.length; i++) {
-      var song = PH.songs[i];
+    for (var i = 0; i < songs.length; i++) {
+      var song = songs[i];
       var best = progress.best[song.id];
       if (!best && current === -1) current = i;
       var cls = best ? ' done' : (i === current ? ' current' : '');
@@ -513,7 +541,7 @@
 
   function onLevelClick() {
     var idx = parseInt(this.getAttribute('data-index'), 10);
-    showSongSetup(PH.songs[idx]);
+    showSongSetup(availableSongs()[idx]);
   }
 
   /* ---------------- escolher como tocar a fase ---------------- */
@@ -809,6 +837,16 @@
     updateDemoBadge();
   }
 
+  /**
+   * Volta/avança `sec` segundos. Pausa junto (como arrastar a barra): o jogador vê as notas
+   * do novo ponto paradas no palco e, ao continuar, vem a contagem 3-2-1.
+   */
+  function seekBy(sec) {
+    if (state.mode !== 'song' || !state.timeline.length) return;
+    pauseGame();
+    seekTo(state.songTime + sec);
+  }
+
   /* ---------------- contagem regressiva (3-2-1) ---------------- */
 
   var countdownShown = null;
@@ -880,9 +918,10 @@
   }
 
   function nextSong() {
-    var idx = songIndexOf(state.song ? state.song.id : null);
-    if (idx < 0 || idx + 1 >= PH.songs.length) return null;
-    return PH.songs[idx + 1];
+    var songs = availableSongs();
+    var idx = state.song ? songs.indexOf(state.song) : -1;
+    if (idx < 0 || idx + 1 >= songs.length) return null;
+    return songs[idx + 1];
   }
 
   function saveProgress(songId, acc, score, combo) {
@@ -960,6 +999,7 @@
     el.demoItem.hidden = !isSong;
     el.songLabelItem.hidden = !isSong;
     el.scrubberItem.hidden = !isSong;
+    document.body.classList.toggle('song-mode', isSong);   // mostra ⏪/⏩ (HUD e pausa), ver style.css
   }
 
   /* ---------------- ciclo de uma partida ---------------- */
@@ -989,19 +1029,21 @@
    */
   function buildTimeline(song) {
     var secPerTick = beatSeconds(song) / PH.songTiming.PPQ;
+    // Música inteira transposta em oitavas pra caber no teclado desenhado (0 no PC). Se
+    // nem assim couber, cada nota é trazida pra faixa sozinha (fitMidi) como último recurso.
+    var shift = PH.notes.songShift(song);
     var ticks = 0;
     var out = [];
     for (var i = 0; i < song.notes.length; i++) {
       var durTicks = song.durations[i];
       var sustainTicks = song.sustainDurations ? song.sustainDurations[i] : durTicks;
       var raw = Array.isArray(song.notes[i]) ? song.notes[i] : [song.notes[i]];
-      // Teclado compacto (celular, 2 oitavas — ver notes.js): notas fora da faixa descem/
-      // sobem de oitava pra caber. Dois sons do acorde podem cair na mesma tecla depois
-      // disso (ex.: baixo e melodia em oitavas) — viram uma só, senão o acorde exigiria
-      // tocar a mesma tecla duas vezes e nunca terminaria.
+      // Dois sons do acorde podem cair na mesma tecla depois do fitMidi (ex.: baixo e
+      // melodia em oitavas) — viram uma só, senão o acorde exigiria tocar a mesma tecla
+      // duas vezes e nunca terminaria.
       var midis = [];
       raw.forEach(function (midi) {
-        var fitted = PH.notes.fitMidi(midi);
+        var fitted = shift !== null ? midi + shift : PH.notes.fitMidi(midi);
         if (midis.indexOf(fitted) === -1) midis.push(fitted);
       });
       out.push({

@@ -11,18 +11,19 @@ window.PianoHero = window.PianoHero || {};
   // à mão, pra facilitar mudar o alcance depois (só trocar MIN_MIDI/MAX_MIDI).
   //
   // Celular (tela de toque pequena): 5 oitavas dariam ~10px por tecla branca, impossível
-  // de tocar com o dedo — então o teclado encolhe pra 2 oitavas (Dó3–Dó5, a mesma faixa
-  // das amostras gravadas e do mapa do teclado do PC). Decidido uma vez, no carregamento,
-  // pelo menor lado da tela (não muda ao girar o aparelho). `?oitavas=2` / `?oitavas=5` na
-  // URL força um dos dois, pra testar no PC. As fases com notas fora dessa faixa são
-  // trazidas pra dentro dela por oitava em `fitMidi()` (ver buildTimeline() no main.js).
+  // de tocar com o dedo — então o teclado encolhe pra UMA oitava (Dó4–Dó5: 8 brancas e 5
+  // pretas, teclas bem largas com o celular deitado). Decidido uma vez, no carregamento,
+  // pelo menor lado da tela (não muda ao girar o aparelho). `?oitavas=1` / `?oitavas=5` na
+  // URL força um dos dois, pra testar no PC. No celular só aparecem as fases que cabem
+  // inteiras nessa oitava (`songFits()`, ver `availableSongs()` no main.js) — em vez de
+  // espremer à força músicas largas, que ficariam irreconhecíveis.
   var COMPACT = (function () {
     var forced = /[?&]oitavas=(\d)/.exec(location.search);
-    if (forced) return forced[1] === '2';
+    if (forced) return forced[1] !== '5';
     var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     return !!coarse && Math.min(screen.width, screen.height) < 600;
   })();
-  var MIN_MIDI = COMPACT ? 48 : 36, MAX_MIDI = COMPACT ? 72 : 96;
+  var MIN_MIDI = COMPACT ? 60 : 36, MAX_MIDI = COMPACT ? 72 : 96;
   // Classe no <html> pro CSS montar o layout de celular (deitado, com aviso de girar).
   if (COMPACT) document.documentElement.classList.add('compact');
   var WHITE_PC = [0, 2, 4, 5, 7, 9, 11];   // classes de altura das teclas brancas (Dó Ré Mi Fá Sol Lá Si)
@@ -70,6 +71,27 @@ window.PianoHero = window.PianoHero || {};
     var oct = Math.floor(midi / 12) - 1;
     return noteName(midi) + oct;
   }
+
+  /**
+   * Quanto transpor a música inteira (em oitavas, pra não mudar o tom) pra caber no
+   * teclado desenhado — 0 se já cabe, `null` se não cabe de jeito nenhum (extensão maior
+   * que o teclado). Transpor a música toda, e não nota a nota, preserva a melodia.
+   */
+  function songShift(song) {
+    var lo = Infinity, hi = -Infinity;
+    song.notes.forEach(function (n) {
+      (Array.isArray(n) ? n : [n]).forEach(function (m) {
+        if (m < lo) lo = m;
+        if (m > hi) hi = m;
+      });
+    });
+    for (var k = 0; Math.abs(k) <= 48; k = k <= 0 ? -k + 12 : -k) {
+      if (lo + k >= MIN_MIDI && hi + k <= MAX_MIDI) return k;
+    }
+    return null;
+  }
+
+  function songFits(song) { return songShift(song) !== null; }
 
   /**
    * Traz uma nota pra dentro do teclado desenhado subindo/descendo de oitava em oitava —
@@ -122,6 +144,8 @@ window.PianoHero = window.PianoHero || {};
     MAX_MIDI: MAX_MIDI,
     COMPACT: COMPACT,
     fitMidi: fitMidi,
+    songShift: songShift,
+    songFits: songFits,
     WHITE: WHITE,
     BLACK: BLACK,
     POOLS: POOLS,
