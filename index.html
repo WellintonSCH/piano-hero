@@ -59,6 +59,7 @@
       <strong id="songLabel">—</strong>
     </div>
     <span id="demoBadge" class="demo-badge" hidden>▶ Demonstração — só observe</span>
+    <span id="handBadge" class="hand-badge" hidden></span>
     <div class="hud-spacer"></div>
     <div class="hud-controls">
       <!-- Voltar/avançar alguns segundos (só modo fase): no topo, longe das teclas. -->
@@ -69,60 +70,72 @@
           <svg class="ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><span class="btn-text">Opções</span>
         </button>
         <div id="optionsPanel" class="options-panel" hidden role="menu">
-          <label class="toggle">
-            <input type="checkbox" id="hintToggle" checked>
-            <span>Dica no teclado</span>
-          </label>
-          <label class="toggle">
-            <input type="checkbox" id="effectsToggle" checked>
-            <span>Efeitos</span>
-          </label>
-          <label class="toggle" title="Corta o som do piano do PC (metrônomo continua audível) — pra jogar num piano externo de verdade">
-            <input type="checkbox" id="muteToggle">
-            <span>Silenciar piano</span>
-          </label>
-          <label class="toggle">
-            <input type="checkbox" id="latencyToggle">
-            <span>Medir latência</span>
-          </label>
-
-          <div class="options-sep" id="difficultyItem">
-            <span class="options-row-label">Dificuldade (modo livre)</span>
-            <select id="difficulty" title="Conjunto de notas (modo livre)">
-              <option value="white">Só teclas brancas</option>
-              <option value="scale">Escala de Dó</option>
-              <option value="all">Com sustenidos</option>
-            </select>
+          <div class="options-group">
+            <span class="options-group-title">Som</span>
+            <label class="toggle" title="Corta o som do piano do PC (metrônomo continua audível) — pra jogar num piano externo de verdade">
+              <input type="checkbox" id="muteToggle">
+              <span>Silenciar piano</span>
+            </label>
+            <div id="metronomeItem" hidden>
+              <label class="toggle">
+                <input type="checkbox" id="metronomeToggle">
+                <span>Metrônomo</span>
+                <span id="metronomeDot" class="metronome-dot" aria-hidden="true"></span>
+              </label>
+            </div>
           </div>
 
-          <div class="options-sep" id="speedItem" hidden>
-            <span class="options-row-label">Velocidade (fase)</span>
-            <select id="speed" title="Velocidade da música (fase), em BPM">
-              <option value="0.5">… BPM</option>
-              <option value="0.75">… BPM</option>
-              <option value="1" selected>… BPM</option>
-              <option value="1.25">… BPM</option>
-              <option value="1.5">… BPM</option>
-            </select>
-          </div>
-
-          <div id="waitItem" hidden>
+          <div class="options-group">
+            <span class="options-group-title">Visual</span>
             <label class="toggle">
-              <input type="checkbox" id="waitToggle">
-              <span>Modo espera</span>
+              <input type="checkbox" id="hintToggle" checked>
+              <span>Dica no teclado</span>
+            </label>
+            <label class="toggle">
+              <input type="checkbox" id="effectsToggle" checked>
+              <span>Efeitos</span>
             </label>
           </div>
-          <div id="metronomeItem" hidden>
-            <label class="toggle">
-              <input type="checkbox" id="metronomeToggle">
-              <span>Metrônomo</span>
-              <span id="metronomeDot" class="metronome-dot" aria-hidden="true"></span>
-            </label>
+
+          <div class="options-group">
+            <span class="options-group-title">Partida</span>
+            <div id="difficultyItem">
+              <span class="options-row-label">Dificuldade (modo livre)</span>
+              <select id="difficulty" title="Conjunto de notas (modo livre)">
+                <option value="white">Só teclas brancas</option>
+                <option value="scale">Escala de Dó</option>
+                <option value="all">Com sustenidos</option>
+              </select>
+            </div>
+            <div id="speedItem" hidden>
+              <span class="options-row-label">Velocidade</span>
+              <select id="speed" title="Velocidade da música (fase), em BPM">
+                <option value="0.5">… BPM</option>
+                <option value="0.75">… BPM</option>
+                <option value="1" selected>… BPM</option>
+                <option value="1.25">… BPM</option>
+                <option value="1.5">… BPM</option>
+              </select>
+            </div>
+            <div id="waitItem" hidden>
+              <label class="toggle">
+                <input type="checkbox" id="waitToggle">
+                <span>Modo espera</span>
+              </label>
+            </div>
+            <div id="demoItem" hidden>
+              <label class="toggle" title="A música toca sozinha, no tempo certo, pra você ouvir/ver a melodia antes de tentar">
+                <input type="checkbox" id="demoToggle">
+                <span>Demonstração</span>
+              </label>
+            </div>
           </div>
-          <div id="demoItem" hidden>
-            <label class="toggle" title="A música toca sozinha, no tempo certo, pra você ouvir/ver a melodia antes de tentar">
-              <input type="checkbox" id="demoToggle">
-              <span>Demonstração</span>
+
+          <div class="options-group">
+            <span class="options-group-title">Avançado</span>
+            <label class="toggle">
+              <input type="checkbox" id="latencyToggle">
+              <span>Medir latência</span>
             </label>
           </div>
         </div>
@@ -178,25 +191,39 @@
           <button id="btnBackFromSong" type="button" class="icon-circle small ghost" aria-label="Voltar para as fases" title="Voltar para as fases"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
         </div>
         <p id="setupSubtitle"></p>
+        <!-- Organizada de cima pra baixo: escolhas (mão, velocidade) e, por último, os
+             botões que começam a partida (um por modo). Ranking recolhido no fim. -->
+        <div class="setup-section" id="setupHandSection">
+          <span class="setup-label">Mão</span>
+          <div class="segmented" id="setupHand" role="radiogroup" aria-label="Mão a praticar">
+            <button type="button" data-hand="both" role="radio">Ambas</button>
+            <button type="button" data-hand="R" role="radio"><span class="hand-dot R" aria-hidden="true"></span>Direita</button>
+            <button type="button" data-hand="L" role="radio"><span class="hand-dot L" aria-hidden="true"></span>Esquerda</button>
+          </div>
+          <small class="setup-hint" id="setupHandHint"></small>
+        </div>
+        <div class="setup-section">
+          <span class="setup-label">Velocidade</span>
+          <div class="segmented speed-seg" id="setupSpeed" role="radiogroup" aria-label="Velocidade"></div>
+        </div>
         <div class="setup-modes">
           <button id="btnPlayNormal" type="button" class="setup-mode primary">
-            <span class="setup-icon">▶</span>
+            <span class="setup-icon"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5a.8.8 0 0 0-1.2.7z" fill="currentColor" stroke="none"/></svg></span>
             <span class="setup-text"><strong>Jogar</strong><small>No ritmo da música</small></span>
           </button>
           <button id="btnPlayWait" type="button" class="setup-mode">
-            <span class="setup-icon">⏳</span>
+            <span class="setup-icon"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>
             <span class="setup-text"><strong>Modo espera</strong><small>A música espera você acertar</small></span>
           </button>
           <button id="btnPlayDemo" type="button" class="setup-mode">
-            <span class="setup-icon">👀</span>
+            <span class="setup-icon"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></span>
             <span class="setup-text"><strong>Demonstração</strong><small>Ouvir e ver antes de tentar</small></span>
           </button>
         </div>
-        <label class="setup-speed">
-          <span>Velocidade</span>
-          <select id="setupSpeed"></select>
-        </label>
-        <div class="setup-ranking" id="setupRanking"></div>
+        <details class="setup-ranking-box" id="setupRankingBox">
+          <summary id="setupRankingSummary">Ranking da fase</summary>
+          <div class="setup-ranking" id="setupRanking"></div>
+        </details>
       </div>
 
       <div class="overlay-card wide help-card" id="screen-help" hidden>
@@ -207,6 +234,7 @@
         <p>As notas caem até a linha: toque a nota certa, na hora certa.</p>
         <ul class="how">
           <li><b>Toque/mouse:</b> toque nas teclas desenhadas</li>
+          <li><b>Mãos e dedos:</b> cada nota mostra o dedo (1 = dedão … 5 = mindinho); azul = mão direita, laranja = esquerda. Em "Como tocar" dá pra praticar uma mão só — a outra toca sozinha</li>
           <li><b>Pontos:</b> o combo multiplica (até ×5) e a velocidade também — mais rápido vale mais (×0,5 a ×1,5)</li>
           <li><b>Pausar:</b> toque no meio da tela, como num vídeo (ou Esc)</li>
           <li><b>Tela cheia no celular:</b> Android entra sozinho no primeiro toque (ou pelo botão ao lado do ?). No iPhone: <b>Compartilhar → Adicionar à Tela de Início</b> e abra pelo ícone — abre em tela cheia, como um app.</li>
@@ -240,9 +268,11 @@
       </div>
 
       <div class="overlay-card wide" id="screen-complete" hidden>
+        <span class="record-badge" id="recordBadge" hidden>Novo recorde!</span>
         <h1 id="completeTitle">Fase completa!</h1>
         <div class="complete-stats" id="completeStats"></div>
         <p class="complete-summary" id="completeSummary"></p>
+        <div class="complete-hands" id="completeHands"></div>
         <button id="btnReportToggle" type="button" class="report-toggle ghost" aria-expanded="false">Ver detalhes</button>
         <div id="completeReport" hidden></div>
         <div class="menu-buttons">
@@ -291,6 +321,7 @@
 <script src="audio.js"></script>
 <script src="notes.js"></script>
 <script src="songs.js"></script>
+<script src="fingering.js"></script>
 <script src="render.js"></script>
 <script src="input.js"></script>
 <script src="main.js"></script>

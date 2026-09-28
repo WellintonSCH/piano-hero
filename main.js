@@ -51,6 +51,9 @@
     effects: true,         // false = "modo foco": desliga partículas/tremor extras
     mutePiano: false,      // true = silencia o som do piano do PC (toca num piano externo de verdade)
     demoMode: false,       // modo fase: true = a música toca sozinha (auto-play), sem exigir input
+    practiceHand: 'both',  // modo fase: 'both' | 'R' | 'L' — mão praticada; a outra toca sozinha
+    autoTimeline: [],      // modo fase: notas da OUTRA mão (praticando uma só), tocadas sozinhas
+    autoCursor: 0,         // modo fase: próxima posição de autoTimeline a tocar
     paused: false,         // true = jogo pausado (loop congelado, overlay de pausa visível)
     countdownTo: null,     // modo fase: songTime em que a contagem 3-2-1 termina; null = sem contagem
     rewind: null,          // modo fase: animação de rebobinar ao continuar { from, to, t (0..1) }; null = nenhuma
@@ -96,6 +99,7 @@
     el.songLabel = document.getElementById('songLabel');
     el.songLabelItem = document.getElementById('songLabelItem');
     el.demoBadge = document.getElementById('demoBadge');
+    el.handBadge = document.getElementById('handBadge');
     el.scrubberItem = document.getElementById('scrubberItem');
     el.scrubTrack = document.getElementById('scrubTrack');
     el.scrubFill = document.getElementById('scrubFill');
@@ -135,12 +139,27 @@
     el.setupSubtitle = document.getElementById('setupSubtitle');
     el.setupSpeed = document.getElementById('setupSpeed');
     el.setupRanking = document.getElementById('setupRanking');
+    el.setupRankingBox = document.getElementById('setupRankingBox');
+    el.setupRankingSummary = document.getElementById('setupRankingSummary');
+    el.setupHand = document.getElementById('setupHand');
+    el.setupHandSection = document.getElementById('setupHandSection');
+    el.setupHandHint = document.getElementById('setupHandHint');
+    el.setupHand.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-hand]');
+      if (b) { state.practiceHand = b.getAttribute('data-hand'); refreshSegmented(); }
+    });
+    el.setupSpeed.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-speed]');
+      if (b) { setupSpeedValue = parseFloat(b.getAttribute('data-speed')); refreshSegmented(); }
+    });
     el.levelList = document.getElementById('levelList');
     el.rankingList = document.getElementById('rankingList');
     el.completeTitle = document.getElementById('completeTitle');
     el.completeStats = document.getElementById('completeStats');
     el.completeReport = document.getElementById('completeReport');
     el.completeSummary = document.getElementById('completeSummary');
+    el.completeHands = document.getElementById('completeHands');
+    el.recordBadge = document.getElementById('recordBadge');
     el.btnReportToggle = document.getElementById('btnReportToggle');
     el.btnReportToggle.addEventListener('click', function () {
       setReportExpanded(el.completeReport.hidden);
@@ -541,34 +560,66 @@
   /* ---------------- escolher como tocar a fase ---------------- */
 
   var setupSong = null;
+  var setupSpeedValue = 1;
+
+  var HAND_NAMES = { R: 'mão direita', L: 'mão esquerda', both: 'duas mãos' };
 
   /**
-   * Tela entre a lista e a partida: escolher o jeito de tocar (normal / modo espera /
-   * demonstração) e a velocidade, em vez de deixar isso escondido no menu ⚙ da partida.
-   * A escolha só sincroniza os mesmos toggles/preferências do menu ⚙ — não é um estado
-   * paralelo, então mudar lá durante a partida continua funcionando igual.
+   * Tela entre o mapa e a partida, organizada de cima pra baixo: MÃO a praticar (só em
+   * músicas que usam as duas), VELOCIDADE (botões com o BPM real e o bônus de pontos) e,
+   * por último, os botões que começam a partida — um por modo (Jogar / Modo espera /
+   * Demonstração). O ranking da fase fica recolhido no fim. As escolhas só sincronizam os
+   * mesmos toggles/preferências do menu ⚙ — não é um estado paralelo.
    */
   function showSongSetup(song) {
     setupSong = song;
     el.setupTitle.textContent = song.title;
     el.setupSubtitle.textContent = song.subtitle || '';
-    var html = '';
-    SPEED_MULTIPLIERS.forEach(function (mult) {
-      html += '<option value="' + mult + '"' + (mult === state.speed ? ' selected' : '') + '>' +
-        Math.round(song.bpm * mult) + ' BPM' + (mult === 1 ? ' (original)' : '') +
-        ' · ' + speedPointsLabel(mult) + '</option>';
-    });
-    el.setupSpeed.innerHTML = html;
+
+    var hands = PH.fingering.handsUsed(song);
+    var twoHands = hands.R && hands.L;
+    el.setupHandSection.hidden = !twoHands;
+    if (!twoHands) state.practiceHand = 'both';
+    el.setupHandHint.textContent = 'Praticando uma mão, a outra toca sozinha no tempo certo.';
+
+    setupSpeedValue = state.speed;
+    el.setupSpeed.innerHTML = SPEED_MULTIPLIERS.map(function (mult) {
+      return '<button type="button" role="radio" data-speed="' + mult + '">' +
+        '<strong>' + Math.round(song.bpm * mult) + '</strong>' +
+        '<small>' + (mult === 1 ? 'original' : '×' + String(mult).replace('.', ',') + ' pts') + '</small></button>';
+    }).join('');
+    refreshSegmented();
+
+    var list = scoresFor(song.id);
     el.setupRanking.innerHTML = buildSongRankingHTML(song);
+    el.setupRankingSummary.textContent = list.length
+      ? 'Ranking da fase · recorde ' + list[0].score + ' pts'
+      : 'Ranking da fase · nenhuma tentativa ainda';
+    el.setupRankingBox.open = false;
     showScreen('song');
+  }
+
+  /** Marca o botão escolhido nos grupos de botões (mão e velocidade). */
+  function refreshSegmented() {
+    [].forEach.call(el.setupHand.querySelectorAll('[data-hand]'), function (b) {
+      var on = b.getAttribute('data-hand') === state.practiceHand;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    [].forEach.call(el.setupSpeed.querySelectorAll('[data-speed]'), function (b) {
+      var on = parseFloat(b.getAttribute('data-speed')) === setupSpeedValue;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
   }
 
   function buildSongRankingHTML(song) {
     var list = scoresFor(song.id);
     if (!list.length) return '<p class="ranking-empty">Nenhuma tentativa ainda — seja o primeiro!</p>';
     var MEDALS = ['🥇', '🥈', '🥉'];
-    return '<div class="setup-ranking-title">🏆 Ranking da fase</div>' + list.map(function (e, i) {
+    return list.map(function (e, i) {
       var details = e.accuracy + '%' + (e.combo ? ' · combo ' + e.combo : '') +
+        (e.hand && e.hand !== 'both' ? ' · só ' + HAND_NAMES[e.hand] : '') +
         (e.wait ? ' · espera' : '') +
         (e.speed && e.speed !== 1 ? ' · ' + Math.round(song.bpm * e.speed) + ' BPM' : '') +
         (e.date ? ' · ' + new Date(e.date).toLocaleDateString('pt-BR') : '');
@@ -582,7 +633,7 @@
     if (!setupSong) return;
     state.waitMode = kind === 'wait';
     state.demoMode = kind === 'demo';
-    state.speed = parseFloat(el.setupSpeed.value) || 1;
+    state.speed = setupSpeedValue || 1;
     el.waitToggle.checked = state.waitMode;
     el.demoToggle.checked = state.demoMode;
     el.speed.value = String(state.speed);
@@ -1040,7 +1091,8 @@
   function saveProgress(songId, acc, score, combo) {
     var idx = songIndexOf(songId);
     var best = progress.best[songId];
-    var entry = { accuracy: acc, score: score, combo: combo, date: Date.now(), wait: state.waitMode, speed: state.speed };
+    var entry = { accuracy: acc, score: score, combo: combo, date: Date.now(), wait: state.waitMode,
+                  speed: state.speed, hand: state.practiceHand };
     if (!best || score > best.score || (score === best.score && acc > best.accuracy)) {
       progress.best[songId] = entry;
     }
@@ -1147,6 +1199,7 @@
     // Música inteira transposta em oitavas pra caber no teclado desenhado (0 no PC). Se
     // nem assim couber, cada nota é trazida pra faixa sozinha (fitMidi) como último recurso.
     var shift = PH.notes.songShift(song);
+    var labels = PH.fingering.forSong(song);   // mão + dedo de cada nota
     var ticks = 0;
     var out = [];
     for (var i = 0; i < song.notes.length; i++) {
@@ -1156,19 +1209,50 @@
       // Dois sons do acorde podem cair na mesma tecla depois do fitMidi (ex.: baixo e
       // melodia em oitavas) — viram uma só, senão o acorde exigiria tocar a mesma tecla
       // duas vezes e nunca terminaria.
-      var midis = [];
-      raw.forEach(function (midi) {
+      var midis = [], hands = [], fingers = [];
+      raw.forEach(function (midi, k) {
         var fitted = shift !== null ? midi + shift : PH.notes.fitMidi(midi);
-        if (midis.indexOf(fitted) === -1) midis.push(fitted);
+        if (midis.indexOf(fitted) !== -1) return;
+        var label = labels[i][k] || 'R1';   // "R3" = mão direita, dedo 3 (ver fingering.js)
+        midis.push(fitted);
+        hands.push(label.charAt(0));
+        fingers.push(Number(label.charAt(1)) || 0);
       });
       out.push({
-        midis: midis, time: ticks * secPerTick,
+        midis: midis, hands: hands, fingers: fingers, time: ticks * secPerTick,
         dur: durTicks * secPerTick, sustain: sustainTicks * secPerTick,
         index: i
       });
       ticks += durTicks;
     }
     return out;
+  }
+
+  /**
+   * Separa a timeline por mão: `mine` = só as notas da mão praticada (as que o jogador
+   * toca e que pontuam), `other` = as da outra mão (tocadas sozinhas por advanceAuto()).
+   * Uma posição com notas das duas mãos vira uma posição em cada lista, no mesmo tempo.
+   */
+  function splitByHand(full, hand) {
+    function pick(slot, keep) {
+      var idx = [];
+      slot.hands.forEach(function (h, k) { if (keep(h)) idx.push(k); });
+      if (!idx.length) return null;
+      return {
+        midis: idx.map(function (k) { return slot.midis[k]; }),
+        hands: idx.map(function (k) { return slot.hands[k]; }),
+        fingers: idx.map(function (k) { return slot.fingers[k]; }),
+        time: slot.time, dur: slot.dur, sustain: slot.sustain, index: slot.index
+      };
+    }
+    var mine = [], other = [];
+    full.forEach(function (slot) {
+      var a = pick(slot, function (h) { return h === hand; });
+      var b = pick(slot, function (h) { return h !== hand; });
+      if (a) mine.push(a);
+      if (b) other.push(b);
+    });
+    return { mine: mine, other: other };
   }
 
   function reset() {
@@ -1189,11 +1273,23 @@
     sequence.last = null;
 
     if (state.mode === 'song' && state.song) {
-      state.timeline = buildTimeline(state.song);
+      var full = buildTimeline(state.song);
+      state.timeline = full;
+      state.autoTimeline = [];
+      // Praticando uma mão (fora da demonstração, que toca tudo): o jogador só é cobrado
+      // pelas notas dela; as da outra mão entram em autoTimeline e tocam sozinhas.
+      if (state.practiceHand !== 'both' && !state.demoMode) {
+        var parts = splitByHand(full, state.practiceHand);
+        if (parts.mine.length) {
+          state.timeline = parts.mine;
+          state.autoTimeline = parts.other;
+        }
+      }
+      state.autoCursor = 0;
       state.cursor = 0;
       state.songTime = -PRE_ROLL;
       state.countdownTo = 0;
-      var last = state.timeline[state.timeline.length - 1];
+      var last = full[full.length - 1];
       state.songDuration = last ? last.time + last.dur : 0;
       // Primeiro tempo (semínima) a soar: pode ser negativo (clique de contagem, durante
       // o pré-roll) — Math.ceil garante que não pulamos o tempo 0 por erro de arredondamento.
@@ -1285,6 +1381,10 @@
     while (i < timeline.length && timeline[i].time + timeline[i].dur <= state.songTime) i++;
     state.cursor = i;
     state.targetMidis = i < timeline.length ? timeline[i].midis.slice() : [];
+    // Outra mão (praticando uma só): a partir da primeira nota que ainda não começou.
+    var a = 0;
+    while (a < state.autoTimeline.length && state.autoTimeline[a].time < state.songTime) a++;
+    state.autoCursor = a;
 
     if (state.metronome) state.nextClick = Math.ceil(state.songTime / beatSeconds(state.song));
 
@@ -1348,7 +1448,23 @@
       var y = layout.hitLine - dt * pxPerSec;
       var midis = i === state.cursor ? state.targetMidis : chord.midis;
       for (var m = 0; m < midis.length; m++) {
-        arr.push({ midi: midis[m], y: y, len: len, chordIndex: i });
+        var k = chord.midis.indexOf(midis[m]);
+        arr.push({ midi: midis[m], y: y, len: len, chordIndex: i,
+                   hand: chord.hands[k], finger: chord.fingers[k] });
+      }
+    }
+
+    // Notas da outra mão (praticando uma só): caem apagadas, sem brilho de alvo — dá pra
+    // ver o que a outra mão faz, mas não é o jogador quem toca.
+    var auto = state.autoTimeline;
+    for (var a = state.autoCursor; a < auto.length; a++) {
+      var ac = auto[a];
+      var adt = ac.time - state.songTime;
+      if (adt > LEAD_TIME + 0.05) break;
+      var alen = Math.max(ac.dur * pxPerSec, layout.noteH);
+      for (var am = 0; am < ac.midis.length; am++) {
+        arr.push({ midi: ac.midis[am], y: layout.hitLine - adt * pxPerSec, len: alen,
+                   auto: true, hand: ac.hands[am], finger: ac.fingers[am] });
       }
     }
 
@@ -1375,7 +1491,8 @@
       state.targetMidis.forEach(function (midi) {
         state.misses++;
         state.combo = 0;
-        state.log.push({ index: missed.index, expected: midi, result: 'timeout', deltaMs: null });
+        state.log.push({ index: missed.index, expected: midi, result: 'timeout', deltaMs: null,
+                         hand: handOf(missed, midi) });
         flash(midi, false);
       });
       PH.audio.playTimeout();
@@ -1438,6 +1555,7 @@
       advanceDemo();
     } else {
       checkAutoMiss();
+      advanceAuto();
     }
     if (state.metronome) scheduleMetronome();
   }
@@ -1456,6 +1574,15 @@
     checkSongEnd();
   }
 
+  /** Praticando uma mão: a outra toca sozinha, cada posição no seu tempo. */
+  function advanceAuto() {
+    var auto = state.autoTimeline;
+    while (state.autoCursor < auto.length && state.songTime >= auto[state.autoCursor].time) {
+      playDemoChord(auto[state.autoCursor], true);
+      state.autoCursor++;
+    }
+  }
+
   /**
    * Toca e "segura" visualmente todas as notas de um acorde da timeline, sozinho.
    * Solta um pouco antes do próximo acorde (`durMs`) e com decaimento curto (`release`
@@ -1463,7 +1590,7 @@
    * semicolcheias, um decaimento longo demais embola uma nota na próxima, deixando a
    * demonstração soar "grudada"/borrada em vez de articulada.
    */
-  function playDemoChord(chord) {
+  function playDemoChord(chord, isAuto) {
     // `sustain` (não `dur`) decide quanto tempo a nota soa aqui — ver o comentário em
     // buildTimeline(). Numa música com duas vozes, isso deixa a nota grave "segurando"
     // de verdade em vez de ser cortada assim que a melodia passa pra próxima colcheia.
@@ -1472,9 +1599,10 @@
     chord.midis.forEach(function (midi) {
       PH.audio.startNote(midi, 1);
       holdKey(midi, true);
-      state.resolvedBars.push({ midi: midi, time: chord.time, dur: chord.sustain });
+      state.resolvedBars.push({ midi: midi, time: chord.time, dur: chord.sustain, auto: !!isAuto,
+                                hand: chord.hands ? chord.hands[chord.midis.indexOf(midi)] : null });
     });
-    if (state.effects) PH.render.burst(chord.midis[0], true);
+    if (state.effects && !isAuto) PH.render.burst(chord.midis[0], true);
     var durMs = Math.max(chord.sustain * 1000 - 20, 40);
     setTimeout(function () {
       if (state.demoGen !== gen) return;   // a música saltou de posição antes desse timer disparar
@@ -1532,7 +1660,7 @@
       state.targetMidis.splice(idx, 1);
       state.log.push({
         index: chord.index, expected: played, result: perfect ? 'perfect' : 'good',
-        deltaMs: state.waitMode ? null : Math.round(dt * 1000)
+        deltaMs: state.waitMode ? null : Math.round(dt * 1000), hand: handOf(chord, played)
       });
       holdKey(played, true);
       registerHit(played, perfect);
@@ -1545,7 +1673,8 @@
     } else {
       state.misses++;
       state.combo = 0;
-      state.log.push({ index: chord.index, expected: played, result: 'wrong', deltaMs: Math.round(dt * 1000) });
+      state.log.push({ index: chord.index, expected: played, result: 'wrong', deltaMs: Math.round(dt * 1000),
+                       hand: handOf(chord, nearestExpected(chord, played)) });
       holdKey(played, false);
       if (state.effects) PH.render.burst(played, false);
       showFeedback('Era ' + chord.midis.map(PH.notes.noteNameOct).join(' + ') + '!', 'bad');
@@ -1553,6 +1682,20 @@
 
     updateHUD();
     checkSongEnd();
+  }
+
+  /** Mão da nota `midi` na posição `slot` da timeline ('R' / 'L'). */
+  function handOf(slot, midi) {
+    var k = slot.midis.indexOf(midi);
+    return k !== -1 && slot.hands ? slot.hands[k] : 'R';
+  }
+
+  /** Nota errada é atribuída à mão da nota esperada mais próxima (quem "devia" ter tocado). */
+  function nearestExpected(slot, played) {
+    var pool = state.targetMidis.length ? state.targetMidis : slot.midis;
+    return pool.reduce(function (best, m) {
+      return Math.abs(m - played) < Math.abs(best - played) ? m : best;
+    }, pool[0]);
   }
 
   /** Comum a acerto no modo livre e na fase: pontuação, combo e efeito visual sutil. */
@@ -1579,6 +1722,8 @@
     state.running = false;
     var total = state.hits + state.misses;
     var acc = total ? Math.round(state.hits / total * 100) : 100;
+    var prevBest = progress.best[state.song.id];
+    var isRecord = !prevBest || state.score > prevBest.score;
     saveProgress(state.song.id, acc, state.score, state.bestCombo);
 
     var summary = summarizeLog();
@@ -1586,9 +1731,11 @@
 
     el.completeTitle.textContent = '🎉 ' + state.song.title + ' completa!';
     el.completeStats.innerHTML =
-      '<div class="stat"><span>Pontos</span><strong>' + state.score + '</strong></div>' +
-      '<div class="stat"><span>Precisão</span><strong>' + acc + '%</strong></div>' +
-      '<div class="stat"><span>Maior combo</span><strong>' + state.bestCombo + '</strong></div>';
+      '<div class="stat"><span>Pontos</span><strong data-count="' + state.score + '">0</strong></div>' +
+      '<div class="stat"><span>Precisão</span><strong data-count="' + acc + '" data-suffix="%">0%</strong></div>' +
+      '<div class="stat"><span>Maior combo</span><strong data-count="' + state.bestCombo + '">0</strong></div>';
+    el.recordBadge.hidden = !isRecord || state.score === 0;
+    el.completeHands.innerHTML = buildHandsHTML(summary);
     el.completeReport.innerHTML = buildReportHTML(summary, state.waitMode);
     // Resumo de uma linha sempre visível; o relatório completo (contagens, tendência de
     // tempo, notas pra praticar) fica recolhido atrás de "Ver detalhes" — assim a tela de
@@ -1599,6 +1746,47 @@
     el.btnNextLevel.hidden = !hasNext;
 
     showScreen('complete');
+    animateComplete();
+  }
+
+  /**
+   * Relatório por mão: uma barra de precisão pra cada mão que tocou (a praticada, ou as
+   * duas). Praticando uma só, avisa que a outra tocou sozinha.
+   */
+  function buildHandsHTML(s) {
+    var rows = ['R', 'L'].filter(function (h) { return s.byHand[h].total > 0; }).map(function (h) {
+      var b = s.byHand[h];
+      var pct = Math.round(b.hits / b.total * 100);
+      return '<div class="hand-row hand-' + h + '">' +
+        '<span class="hand-name"><span class="hand-dot ' + h + '"></span>' +
+        HAND_NAMES[h].charAt(0).toUpperCase() + HAND_NAMES[h].slice(1) + '</span>' +
+        '<span class="hand-bar"><span class="hand-fill" style="--pct:' + pct + '%"></span></span>' +
+        '<span class="hand-pct">' + pct + '%</span>' +
+        '<span class="hand-count">' + b.hits + '/' + b.total + '</span></div>';
+    });
+    if (!rows.length) return '';
+    var note = state.practiceHand !== 'both' && state.autoTimeline.length
+      ? '<p class="hand-note">Você praticou só a ' + HAND_NAMES[state.practiceHand] + '; a outra tocou sozinha.</p>'
+      : '';
+    return rows.join('') + note;
+  }
+
+  /** Números do fim de fase "contando" de 0 até o valor, e barras das mãos enchendo. */
+  function animateComplete() {
+    var nodes = el.completeStats.querySelectorAll('[data-count]');
+    var start = performance.now(), DUR = 900;
+    function frame(now) {
+      var t = Math.min(1, (now - start) / DUR);
+      var k = 1 - Math.pow(1 - t, 3);   // desacelera no fim
+      [].forEach.call(nodes, function (n) {
+        n.textContent = Math.round(Number(n.getAttribute('data-count')) * k) + (n.getAttribute('data-suffix') || '');
+      });
+      if (t < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    el.completeHands.classList.remove('filled');
+    void el.completeHands.offsetWidth;   // reinicia a transição das barras
+    el.completeHands.classList.add('filled');
   }
 
   function setReportExpanded(open) {
@@ -1613,8 +1801,13 @@
     var perfect = 0, good = 0, wrong = 0, timeout = 0;
     var deltas = [];
     var missCount = {};
+    var byHand = { R: { hits: 0, total: 0 }, L: { hits: 0, total: 0 } };
 
     state.log.forEach(function (e) {
+      if (e.hand && byHand[e.hand]) {
+        byHand[e.hand].total++;
+        if (e.result === 'perfect' || e.result === 'good') byHand[e.hand].hits++;
+      }
       if (e.result === 'perfect') { perfect++; if (e.deltaMs != null) deltas.push(e.deltaMs); }
       else if (e.result === 'good') { good++; if (e.deltaMs != null) deltas.push(e.deltaMs); }
       else if (e.result === 'wrong') { wrong++; tallyMiss(e.expected); }
@@ -1633,7 +1826,7 @@
       .sort(function (a, b) { return b.count - a.count; })
       .slice(0, 4);
 
-    return { perfect: perfect, good: good, wrong: wrong, timeout: timeout, avgDelta: avgDelta, worst: worst };
+    return { perfect: perfect, good: good, wrong: wrong, timeout: timeout, avgDelta: avgDelta, worst: worst, byHand: byHand };
   }
 
   function buildReportHTML(s, waitMode) {
@@ -1751,6 +1944,13 @@
   /** Mostra o selo "Demonstração — só observe" enquanto a música toca sozinha. */
   function updateDemoBadge() {
     el.demoBadge.hidden = !(state.mode === 'song' && state.demoMode && state.running);
+    var practicing = state.mode === 'song' && !state.demoMode && state.practiceHand !== 'both' &&
+      state.autoTimeline.length > 0;
+    el.handBadge.hidden = !practicing;
+    if (practicing) {
+      el.handBadge.className = 'hand-badge hand-' + state.practiceHand;
+      el.handBadge.textContent = 'Praticando: ' + HAND_NAMES[state.practiceHand];
+    }
   }
 
   /** Atualiza o painel de instrumentação de latência (latency.js) — só quando visível. */
