@@ -124,28 +124,61 @@
     <canvas id="game"></canvas>
     <div id="overlay">
 
-      <div class="overlay-card" id="screen-home">
-        <h1>Piano Hero</h1>
-        <p>As notas caem e <strong>esperam</strong> na linha. Sem pressa: toque a nota certa, na ordem certa.</p>
-        <ul class="how">
-          <li><b>Teclado do PC:</b> Z X C V B N M (1ª oitava) · Q W E R T Y U I (2ª oitava) · linha de cima (S D, G H J, 2 3, 5 6 7) = teclas pretas</li>
-          <li><b>Mouse/toque:</b> clique nas teclas desenhadas</li>
-          <li><b>Piano MIDI:</b> conecte e toque — detecção automática</li>
-        </ul>
-        <div class="menu-buttons">
-          <button id="btnLevels" type="button" class="primary">🎵 Fases</button>
-          <button id="btnFree" type="button">🎲 Modo Livre</button>
-          <button id="btnRanking" type="button">🏆 Ranking</button>
+      <!-- Tela inicial = a própria lista de fases (entra direto jogando). Modo livre,
+           ranking e ajuda ficam como ícones no canto, sem texto de instrução na frente. -->
+      <div class="overlay-card wide home-card" id="screen-home">
+        <div class="home-head">
+          <h1>Piano Hero</h1>
+          <div class="home-actions">
+            <button id="btnFree" type="button" class="icon-circle small ghost" aria-label="Modo livre" title="Modo livre">🎲</button>
+            <button id="btnRanking" type="button" class="icon-circle small ghost" aria-label="Ranking" title="Ranking">🏆</button>
+            <button id="btnHelp" type="button" class="icon-circle small ghost" aria-label="Ajuda" title="Ajuda">?</button>
+          </div>
         </div>
-        <p class="midi-status" id="midiStatus">MIDI: verificando…</p>
-        <p class="midi-status" id="pianoStatus">🎹 Som do piano carrega ao começar a jogar.</p>
+        <div class="level-list" id="levelList"></div>
       </div>
 
-      <div class="overlay-card wide" id="screen-levels" hidden>
-        <h1>Escolha uma fase</h1>
-        <p>Complete uma fase pra destravar a próxima.</p>
-        <div class="level-list" id="levelList"></div>
-        <button id="btnBackHome" type="button" class="ghost">Voltar</button>
+      <!-- Ao tocar numa fase: escolher COMO tocar antes de começar (em vez de caçar
+           essas opções no menu ⚙ durante a partida). -->
+      <div class="overlay-card song-setup" id="screen-song" hidden>
+        <h1 id="setupTitle">—</h1>
+        <p id="setupSubtitle"></p>
+        <div class="setup-modes">
+          <button id="btnPlayNormal" type="button" class="setup-mode primary">
+            <span class="setup-icon">▶</span>
+            <span class="setup-text"><strong>Jogar</strong><small>No ritmo da música</small></span>
+          </button>
+          <button id="btnPlayWait" type="button" class="setup-mode">
+            <span class="setup-icon">⏳</span>
+            <span class="setup-text"><strong>Modo espera</strong><small>A música espera você acertar</small></span>
+          </button>
+          <button id="btnPlayDemo" type="button" class="setup-mode">
+            <span class="setup-icon">👀</span>
+            <span class="setup-text"><strong>Demonstração</strong><small>Ouvir e ver antes de tentar</small></span>
+          </button>
+        </div>
+        <label class="setup-speed">
+          <span>Velocidade</span>
+          <select id="setupSpeed"></select>
+        </label>
+        <button id="btnBackFromSong" type="button" class="ghost">Voltar</button>
+      </div>
+
+      <div class="overlay-card wide help-card" id="screen-help" hidden>
+        <div class="home-head">
+          <h1>Como jogar</h1>
+          <button id="btnBackHomeFromHelp" type="button" class="icon-circle small ghost" aria-label="Fechar" title="Fechar">✕</button>
+        </div>
+        <p>As notas caem até a linha: toque a nota certa, na hora certa.</p>
+        <ul class="how">
+          <li><b>Toque/mouse:</b> toque nas teclas desenhadas</li>
+          <li><b>Teclado do PC:</b> Z X C V B N M (1ª oitava) · Q W E R T Y U I (2ª oitava) · linha de cima (S D, G H J, 2 3, 5 6 7) = teclas pretas</li>
+          <li><b>Piano MIDI:</b> conecte e toque — detecção automática</li>
+          <li><b>Ao escolher uma música:</b> jogar no ritmo, modo espera (a música espera você) ou demonstração (só ouvir)</li>
+          <li><b>⚙ Opções (durante o jogo):</b> metrônomo, silenciar piano, efeitos e dica no teclado</li>
+        </ul>
+        <p class="midi-status" id="midiStatus">MIDI: verificando…</p>
+        <p class="midi-status" id="pianoStatus">🎹 Som do piano carrega ao começar a jogar.</p>
       </div>
 
       <div class="overlay-card wide" id="screen-ranking" hidden>

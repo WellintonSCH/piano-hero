@@ -27,6 +27,13 @@ window.PianoHero = window.PianoHero || {};
     // Tetos maiores que antes (era 600 / 0.66): o teclado tem 5 oitavas agora (ver
     // notes.js), então precisa de mais altura pra cada tecla branca não ficar espremida.
     var cssH = Math.round(Math.min(680, Math.max(420, cssW * 0.72)));
+    // Celular em pé: a largura é pequena, então a fórmula acima trava no piso de 420px e
+    // sobra metade da tela vazia embaixo. Usa a altura da janela, descontando HUD, barra
+    // de progresso e rodapé (~330px), pra notas terem mais espaço pra cair e os menus
+    // (que ficam dentro do palco) caberem sem rolar.
+    if (PH.notes.COMPACT) {
+      cssH = Math.round(Math.min(760, Math.max(cssH, window.innerHeight - 330)));
+    }
     var dpr = window.devicePixelRatio || 1;
 
     canvas.width = Math.round(cssW * dpr);

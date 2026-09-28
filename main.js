@@ -115,10 +115,14 @@
     el.latencyClear = document.getElementById('latencyClear');
 
     el.screenHome = document.getElementById('screen-home');
-    el.screenLevels = document.getElementById('screen-levels');
+    el.screenHelp = document.getElementById('screen-help');
     el.screenRanking = document.getElementById('screen-ranking');
     el.screenComplete = document.getElementById('screen-complete');
     el.screenPause = document.getElementById('screen-pause');
+    el.screenSong = document.getElementById('screen-song');
+    el.setupTitle = document.getElementById('setupTitle');
+    el.setupSubtitle = document.getElementById('setupSubtitle');
+    el.setupSpeed = document.getElementById('setupSpeed');
     el.levelList = document.getElementById('levelList');
     el.rankingList = document.getElementById('rankingList');
     el.completeTitle = document.getElementById('completeTitle');
@@ -145,11 +149,15 @@
     window.addEventListener('noteReleased', function (e) { onNoteReleased(e.detail); });
 
     document.getElementById('btnFree').addEventListener('click', startFree);
-    document.getElementById('btnLevels').addEventListener('click', showLevels);
-    document.getElementById('btnBackHome').addEventListener('click', showHome);
+    document.getElementById('btnHelp').addEventListener('click', function () { showScreen('help'); });
+    document.getElementById('btnBackHomeFromHelp').addEventListener('click', showHome);
+    document.getElementById('btnPlayNormal').addEventListener('click', function () { playSongAs('normal'); });
+    document.getElementById('btnPlayWait').addEventListener('click', function () { playSongAs('wait'); });
+    document.getElementById('btnPlayDemo').addEventListener('click', function () { playSongAs('demo'); });
+    document.getElementById('btnBackFromSong').addEventListener('click', showHome);
     document.getElementById('btnRanking').addEventListener('click', showRanking);
     document.getElementById('btnBackHomeFromRanking').addEventListener('click', showHome);
-    document.getElementById('btnToLevelsFromComplete').addEventListener('click', showLevels);
+    document.getElementById('btnToLevelsFromComplete').addEventListener('click', showHome);
     document.getElementById('btnRetryLevel').addEventListener('click', function () {
       el.overlay.hidden = true;
       updateModeUI();   // a tela de fim escondeu a barra de progresso (ver showScreen)
@@ -158,7 +166,7 @@
     });
     el.btnNextLevel.addEventListener('click', function () {
       var next = nextSong();
-      if (next) startSong(next);
+      if (next) showSongSetup(next);
     });
 
     el.menuBtn.addEventListener('click', function () {
@@ -290,11 +298,12 @@
     // se a lista de fases já estiver aberta quando uma terminar de chegar, atualiza na
     // hora em vez de exigir recarregar a página.
     PH.onSongsChanged = function () {
-      if (!el.screenLevels.hidden) renderLevelList();
+      if (!el.screenHome.hidden) renderLevelList();
     };
 
     updateModeUI();
     reset();
+    renderLevelList();   // a tela inicial já abre com a lista de fases
     requestAnimationFrame(loop);
   }
 
@@ -302,7 +311,8 @@
 
   function showScreen(name) {
     el.screenHome.hidden = name !== 'home';
-    el.screenLevels.hidden = name !== 'levels';
+    el.screenHelp.hidden = name !== 'help';
+    el.screenSong.hidden = name !== 'song';
     el.screenRanking.hidden = name !== 'ranking';
     el.screenComplete.hidden = name !== 'complete';
     el.screenPause.hidden = name !== 'pause';
@@ -315,11 +325,10 @@
     setOptionsOpen(false);   // evita o menu de opções ficar flutuando por cima da tela nova
   }
 
-  function showHome() { showScreen('home'); }
-
-  function showLevels() {
+  /** A tela inicial é a própria lista de fases — sempre re-renderizada (melhor % pode ter mudado). */
+  function showHome() {
     renderLevelList();
-    showScreen('levels');
+    showScreen('home');
   }
 
   function showRanking() {
@@ -386,7 +395,45 @@
 
   function onLevelClick() {
     var idx = parseInt(this.getAttribute('data-index'), 10);
-    startSong(PH.songs[idx]);
+    showSongSetup(PH.songs[idx]);
+  }
+
+  /* ---------------- escolher como tocar a fase ---------------- */
+
+  var setupSong = null;
+
+  /**
+   * Tela entre a lista e a partida: escolher o jeito de tocar (normal / modo espera /
+   * demonstração) e a velocidade, em vez de deixar isso escondido no menu ⚙ da partida.
+   * A escolha só sincroniza os mesmos toggles/preferências do menu ⚙ — não é um estado
+   * paralelo, então mudar lá durante a partida continua funcionando igual.
+   */
+  function showSongSetup(song) {
+    setupSong = song;
+    el.setupTitle.textContent = song.title;
+    el.setupSubtitle.textContent = song.subtitle || '';
+    var html = '';
+    SPEED_MULTIPLIERS.forEach(function (mult) {
+      html += '<option value="' + mult + '"' + (mult === state.speed ? ' selected' : '') + '>' +
+        Math.round(song.bpm * mult) + ' BPM' + (mult === 1 ? ' (original)' : '') + '</option>';
+    });
+    el.setupSpeed.innerHTML = html;
+    showScreen('song');
+  }
+
+  function playSongAs(kind) {
+    if (!setupSong) return;
+    state.waitMode = kind === 'wait';
+    state.demoMode = kind === 'demo';
+    state.speed = parseFloat(el.setupSpeed.value) || 1;
+    el.waitToggle.checked = state.waitMode;
+    el.demoToggle.checked = state.demoMode;
+    el.speed.value = String(state.speed);
+    progress.prefs.wait = state.waitMode;
+    progress.prefs.demo = state.demoMode;
+    progress.prefs.speed = state.speed;
+    saveProgressState();
+    startSong(setupSong);
   }
 
   /* ---------------- barra de progresso (voltar/avançar na música) ---------------- */

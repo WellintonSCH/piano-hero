@@ -378,17 +378,29 @@ button.ghost:hover { color: var(--text); }
   touch-action: manipulation;
 }
 
+/* Flex (não grid) pra `max-height: 100%` dos cartões resolver contra a altura do palco:
+   no celular o palco tem ~420px e um cartão mais alto que isso era cortado pelo
+   `overflow: hidden` do #stage — os botões de baixo simplesmente sumiam. Agora o cartão
+   nunca passa da altura do palco e rola por dentro. */
 #overlay {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: radial-gradient(80% 60% at 50% 30%, rgba(30, 36, 64, .92), rgba(6, 7, 13, .94));
   backdrop-filter: blur(6px);
   padding: 16px;
 }
 
 #overlay[hidden] { display: none !important; }
+
+/* Nos menus (lista de fases, escolher modo, ajuda, ranking) não há partida rolando: a HUD
+   de pontos/pausar/reiniciar não significa nada ali e só empurra o menu pra baixo. Na pausa
+   e no fim de fase ela continua (dá contexto do que está pausado/terminou). */
+#app:has(#overlay:not([hidden]) > :is(#screen-home, #screen-song, #screen-help, #screen-ranking):not([hidden])) #hud {
+  display: none;
+}
 
 /* ---------- Barra de progresso (voltar/avançar na música) ---------- */
 
@@ -553,11 +565,109 @@ button.ghost:hover { color: var(--text); }
   border-radius: var(--radius-lg);
   padding: 32px 30px 26px;
   box-shadow: var(--shadow-lg);
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .overlay-card.wide {
   max-width: 560px;
   width: 100%;
+}
+
+/* ---------- Tela inicial (lista de fases) ---------- */
+
+/* O cabeçalho fica fixo e só a lista rola, ocupando toda a altura que sobrar no palco. */
+.home-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px 22px 18px;
+}
+
+.home-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-card h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.home-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Ajuda: o ✕ fica no cabeçalho (sempre visível), o texto rola embaixo se não couber. */
+.help-card { text-align: left; }
+.help-card h1 { margin: 0; font-size: 24px; }
+.help-card > p:first-of-type { margin-top: 10px; }
+
+.home-card .level-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin: 14px 0 0;
+}
+
+/* ---------- Escolher como tocar a fase ---------- */
+
+.song-setup { padding: 22px 22px 16px; }
+.song-setup h1 { font-size: 24px; margin-bottom: 2px; }
+.song-setup p { margin: 0 0 14px; font-size: 13px; }
+
+.setup-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setup-mode {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+}
+
+.setup-icon {
+  flex: 0 0 auto;
+  width: 28px;
+  font-size: 20px;
+  text-align: center;
+}
+
+.setup-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.setup-text strong { font-size: 15px; }
+.setup-text small { font-size: 12px; opacity: .75; font-weight: 500; }
+
+.setup-speed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 14px 0 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.icon-circle.small {
+  width: 40px;
+  height: 40px;
+  font-size: 17px;
+  font-weight: 700;
 }
 
 .overlay-card h1 {
@@ -876,8 +986,20 @@ button.ghost:hover { color: var(--text); }
 }
 
 @media (max-width: 620px) {
-  .hud-controls { width: 100%; }
-  .hud-item { padding-right: 12px; }
-  .overlay-card { padding: 26px 20px 22px; }
-  .overlay-card h1 { font-size: 26px; }
+  body { padding: 8px 8px; }
+  #app { gap: 8px; }
+  #hud { gap: 8px 12px; padding: 8px 10px; }
+  .hud-controls { width: 100%; gap: 6px; }
+  .hud-controls > button, #optionsBtn { flex: 1 1 auto; padding: 8px 6px; font-size: 13px; }
+  .hud-item { min-width: 0; padding-right: 10px; }
+  .hud-item strong { font-size: 18px; }
+  #songLabelItem { flex: 1 1 100%; border-right: none; }
+  #songLabel { font-size: 14px; }
+  #overlay { padding: 8px; }
+  .overlay-card { padding: 18px 14px 14px; }
+  .overlay-card h1 { font-size: 22px; }
+  .home-card { padding: 14px 12px 12px; }
+  .home-card h1 { font-size: 20px; }
+  .level-row { padding: 10px 12px; gap: 10px; }
+  #tips .midi-status { display: none; }   /* log MIDI cru: depuração, só ocupa espaço no celular */
 }
