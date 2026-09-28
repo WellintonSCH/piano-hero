@@ -69,6 +69,9 @@ window.PianoHero = window.PianoHero || {};
   var lastFitAt = -1e9;
   function fitCheck(now) {
     if (!PH.notes.COMPACT || !canvas.parentNode.clientWidth) return;   // oculto (celular em pé)
+    // O Safari às vezes rola a página sozinho (foco em botão, barra de endereço) e o jogo
+    // "subia", cortando o teclado: no celular a página nunca fica rolada.
+    if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
     // No máximo ~4x por segundo: getBoundingClientRect() força o navegador a fechar o layout,
     // e a cada quadro isso pesava no celular. 250ms de atraso num ajuste de tamanho não se nota.
     if (now !== undefined) {

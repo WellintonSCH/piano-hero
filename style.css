@@ -1440,3 +1440,134 @@ html.compact .map-bubble.current::after {
   0%   { transform: scale(.95); opacity: .9; }
   100% { transform: scale(1.35); opacity: 0; }
 }
+
+/* ---------- Controles da pausa: estilo player de vídeo ---------- */
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.pc-btn {
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(12, 15, 30, .6);
+  border: 1px solid rgba(255, 255, 255, .18);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+  transition: transform .12s ease, background-color .12s ease, border-color .12s ease;
+}
+.pc-btn:hover { background: rgba(40, 46, 80, .75); border-color: rgba(255, 255, 255, .32); }
+.pc-btn:active { transform: scale(.93); }
+
+.pc-small { width: 46px; height: 46px; color: rgba(255, 255, 255, .82); }
+
+.pc-play {
+  width: 80px;
+  height: 80px;
+  background: #fff;
+  color: #0b0d18;
+  border: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+.pc-play .ico { margin-left: 4px; }   /* centro óptico do triângulo */
+.pc-play:hover { background: #fff; transform: scale(1.05); }
+.pc-play:active { transform: scale(.95); }
+
+.ico { display: block; }
+
+/* ±5s: só no modo fase (body.song-mode). */
+.player-controls .seek-btn { display: none; }
+body.song-mode .player-controls .seek-btn { display: grid; }
+
+/* Botões da HUD com ícone. */
+#hud .hud-icon { align-items: center; justify-content: center; gap: 6px; }
+#hud #optionsBtn.hud-icon { display: inline-flex; }
+body.song-mode .hud-controls .seek-btn.hud-icon { display: inline-flex; padding: 5px 10px; }
+
+/* ---------- Fim de fase: resumo curto + "Ver detalhes" ---------- */
+
+.complete-summary {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.report-toggle {
+  font-size: 12.5px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  margin-bottom: 4px;
+}
+#completeReport[hidden] { display: none; }
+#completeReport .report { margin-top: 8px; }
+
+/* ---------- Celular deitado: o jogo ocupa a tela inteira ---------- */
+
+@media (orientation: landscape) {
+  /* O app fica "pregado" na tela: nada consegue rolar a página e empurrar o jogo pra cima
+     (o que cortava o teclado ao começar a tocar). */
+  html.compact body { padding: 0; }
+  html.compact #app {
+    position: fixed;
+    inset: 0;
+    padding: 4px max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
+    gap: 0;
+  }
+
+  /* HUD flutuando POR CIMA da pista, sem faixa própria: a pista e o teclado ganham a
+     altura inteira. Só o essencial: pontos e combo à esquerda, ±5s e opções à direita. */
+  html.compact #hud {
+    position: absolute;
+    top: 4px;
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    z-index: 7;
+    padding: 6px 10px 18px;
+    background: linear-gradient(180deg, rgba(6, 8, 16, .72), rgba(6, 8, 16, 0));
+    border: none;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    box-shadow: none;
+    pointer-events: none;        /* tocar no vazio da HUD = tocar na pista (pausa/arrasto) */
+  }
+  html.compact #hud .hud-controls,
+  html.compact #hud .demo-badge { pointer-events: auto; }
+  html.compact #hud .hud-item { border-right: none; padding-right: 4px; }
+  html.compact #hud .hud-item strong { font-size: 14px; }
+  html.compact #hud .hud-label { font-size: 9px; opacity: .8; }
+  html.compact #hud .hud-item:has(#accuracy),
+  html.compact #songLabelItem { display: none; }
+
+  html.compact #hud .hud-icon {
+    width: 34px;
+    height: 34px;
+    padding: 0 !important;
+    border-radius: 50%;
+    background: rgba(12, 15, 30, .55);
+    border: 1px solid rgba(255, 255, 255, .16);
+    color: #fff;
+  }
+  html.compact #hud .btn-text { display: none; }
+
+  html.compact .vscrub { top: 48px; }
+  html.compact #tips { top: 44px; }
+
+  /* Pausa e fim de fase compactos pra caber na altura. */
+  html.compact .player-controls { gap: 16px; }
+  html.compact .pc-btn { width: 50px; height: 50px; }
+  html.compact .pc-small { width: 42px; height: 42px; }
+  html.compact .pc-play { width: 68px; height: 68px; }
+  html.compact .complete-stats { margin: 8px 0; gap: 18px; }
+  html.compact .complete-stats .stat strong { font-size: 22px; }
+  html.compact #screen-complete .menu-buttons { margin: 8px 0 0; }
+  html.compact #screen-complete .menu-buttons button { padding: 8px 16px; font-size: 13.5px; }
+}
+
+/* Os 5 botões da pausa não cabem nos 300px do cartão antigo: sem isso o flex os achatava. */
+.pc-btn { flex: 0 0 auto; }
+.pause-card { max-width: none; width: auto; }

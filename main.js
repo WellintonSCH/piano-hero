@@ -138,6 +138,11 @@
     el.completeTitle = document.getElementById('completeTitle');
     el.completeStats = document.getElementById('completeStats');
     el.completeReport = document.getElementById('completeReport');
+    el.completeSummary = document.getElementById('completeSummary');
+    el.btnReportToggle = document.getElementById('btnReportToggle');
+    el.btnReportToggle.addEventListener('click', function () {
+      setReportExpanded(el.completeReport.hidden);
+    });
     el.btnNextLevel = document.getElementById('btnNextLevel');
 
     PH.render.init(el.canvas);
@@ -1285,7 +1290,8 @@
     var key = Math.round(pct * 10) + '|' + Math.floor(state.songTime) + '|' + PH.render.getLayout().pianoY;
     if (key === lastScrubKey) return;
     lastScrubKey = key;
-    el.vScrub.style.height = Math.max(60, PH.render.getLayout().pianoY - 28) + 'px';
+    // Termina ~14px acima do teclado, a partir de onde a barra começa (o topo muda no celular).
+    el.vScrub.style.height = Math.max(60, PH.render.getLayout().pianoY - el.vScrub.offsetTop - 14) + 'px';
     el.vScrubFill.style.height = pct + '%';
     el.vScrubThumb.style.bottom = pct + '%';
     el.vScrubTime.textContent = formatTime(state.songTime) + ' / ' + formatTime(duration);
@@ -1548,9 +1554,21 @@
       '<div class="stat"><span>Precisão</span><strong>' + acc + '%</strong></div>' +
       '<div class="stat"><span>Maior combo</span><strong>' + state.bestCombo + '</strong></div>';
     el.completeReport.innerHTML = buildReportHTML(summary, state.waitMode);
+    // Resumo de uma linha sempre visível; o relatório completo (contagens, tendência de
+    // tempo, notas pra praticar) fica recolhido atrás de "Ver detalhes" — assim a tela de
+    // fim cabe inteira na tela deitada do celular.
+    el.completeSummary.textContent = summary.perfect + ' perfeitas · ' + summary.good + ' boas · ' +
+      (summary.wrong + summary.timeout) + ' erros';
+    setReportExpanded(false);
     el.btnNextLevel.hidden = !hasNext;
 
     showScreen('complete');
+  }
+
+  function setReportExpanded(open) {
+    el.completeReport.hidden = !open;
+    el.btnReportToggle.textContent = open ? 'Ocultar detalhes' : 'Ver detalhes';
+    el.btnReportToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
   /* ---------------- relatório de performance ---------------- */
