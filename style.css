@@ -1571,3 +1571,8 @@ body.song-mode .hud-controls .seek-btn.hud-icon { display: inline-flex; padding:
 /* Os 5 botões da pausa não cabem nos 300px do cartão antigo: sem isso o flex os achatava. */
 .pc-btn { flex: 0 0 auto; }
 .pause-card { max-width: none; width: auto; }
+
+/* Navegando na música com o jogo pausado: os botões da pausa somem (deixam ver as notas)
+   e voltam ao parar de mexer — ver markSeeking() no main.js. */
+.player-controls { transition: opacity .2s ease; }
+#overlay.seeking .player-controls { opacity: 0; pointer-events: none; }

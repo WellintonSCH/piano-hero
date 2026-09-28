@@ -24,6 +24,7 @@
   var PERFECT_WINDOW = 0.12; // dentro disso conta como acerto "perfeito" (mais pontos)
   var PRE_ROLL = 3;          // segundos de preparo (contagem 3-2-1) antes do tempo 0 da música
   var RESUME_COUNTDOWN = 3;  // segundos de contagem regressiva ao continuar depois de uma pausa
+  var REWIND_ANIM = 0.6;     // segundos (reais) da animação das notas voltando pra cima ao continuar
   var SEEK_STEP = 5;         // segundos por toque nos botões ⏪ / ⏩
   var MAX_SCORES = 5;        // quantas tentativas cada fase guarda no próprio ranking
 
@@ -52,6 +53,7 @@
     demoMode: false,       // modo fase: true = a música toca sozinha (auto-play), sem exigir input
     paused: false,         // true = jogo pausado (loop congelado, overlay de pausa visível)
     countdownTo: null,     // modo fase: songTime em que a contagem 3-2-1 termina; null = sem contagem
+    rewind: null,          // modo fase: animação de rebobinar ao continuar { from, to, t (0..1) }; null = nenhuma
     log: [],               // histórico de notas resolvidas na fase atual (pro relatório)
     notes: [],             // notas ainda por vir, visíveis no momento (ambos os modos)
     resolvedBars: [],      // barras já tocadas que ainda estão "soando" (efeito na nota)
@@ -593,6 +595,19 @@
   /* ---------------- gestos no palco: tocar pausa, arrastar na vertical navega ---------------- */
 
   var DRAG_THRESHOLD = 10;   // px de movimento pra um toque virar arrasto
+  var SEEK_IDLE_MS = 700;    // após parar de navegar, quanto esperar pra mostrar os botões de novo
+
+  /**
+   * Navegando (arrastando a pista/barra, roda do mouse), os botões da pausa somem pra
+   * deixar ver as notas — e voltam sozinhos quando o jogador para de mexer, como num
+   * player de vídeo. Chamar a cada movimento; `hold` = ainda com o dedo na tela.
+   */
+  var seekIdleTimer = null;
+  function markSeeking(hold) {
+    el.overlay.classList.add('seeking');
+    clearTimeout(seekIdleTimer);
+    if (!hold) seekIdleTimer = setTimeout(function () { el.overlay.classList.remove('seeking'); }, SEEK_IDLE_MS);
+  }
 
   /**
    * A área das notas caindo (acima do teclado) funciona como a "pista" de um vídeo:
@@ -631,6 +646,7 @@
       }
       var pxPerSec = PH.render.getLayout().hitLine / LEAD_TIME;
       seekTo(g.songTime + dy / pxPerSec);
+      markSeeking(true);
     }
 
     function end(e) {
@@ -638,6 +654,7 @@
       var tap = !g.dragging && performance.now() - g.t < 500 &&
         Math.abs(e.clientX - g.x) + Math.abs(e.clientY - g.y) < 16;
       var elem = g.elem;
+      if (g.dragging) markSeeking(false);   // soltou: os botões voltam daqui a pouco
       g = null;
       try { elem.releasePointerCapture(e.pointerId); } catch (err) { /* ok */ }
       if (!tap) return;
@@ -675,13 +692,15 @@
       el.vScrub.classList.add('dragging');
       el.vScrub.setPointerCapture(e.pointerId);
       seekTo(timeFromY(e));
+      markSeeking(true);
     });
     el.vScrub.addEventListener('pointermove', function (e) {
-      if (dragging) seekTo(timeFromY(e));
+      if (dragging) { seekTo(timeFromY(e)); markSeeking(true); }
     });
     function end(e) {
       if (!dragging) return;
       dragging = false;
+      markSeeking(false);
       el.vScrub.classList.remove('dragging');
       try { el.vScrub.releasePointerCapture(e.pointerId); } catch (err) { /* ok */ }
     }
@@ -749,6 +768,7 @@
       e.preventDefault();
       pauseGame();
       seekTo(state.songTime + (e.deltaY > 0 ? WHEEL_STEP : -WHEEL_STEP));
+      markSeeking(false);
     }
     document.getElementById('stage').addEventListener('wheel', onWheel, { passive: false });
     el.scrubberItem.addEventListener('wheel', onWheel, { passive: false });
@@ -907,23 +927,22 @@
   }
 
   /**
-   * Continua. No modo fase não volta "a seco" no mesmo instante: recua o relógio
+   * Continua. No modo fase não volta "a seco" no mesmo instante: rebobina o relógio
    * RESUME_COUNTDOWN segundos e mostra 3-2-1 — as notas a partir de onde parou voltam a
-   * cair de cima, dando tempo de ver o que vem (e de se reposicionar depois de mexer na
-   * barra de progresso). Só o relógio recua: `cursor`/`targetMidis` continuam na nota
-   * pendente, então notas de antes do ponto de pausa não voltam a ser cobradas.
+   * cair de cima, dando tempo de ver o que vem (e de se reposicionar depois de navegar).
+   * O recuo é ANIMADO (REWIND_ANIM, ver updateSong()): as notas deslizam pra cima, como um
+   * vídeo rebobinando, em vez de sumirem e reaparecerem no topo. Só o relógio recua:
+   * `cursor`/`targetMidis` continuam na nota pendente, então notas de antes do ponto de
+   * pausa não voltam a ser cobradas.
    */
   function resumeGame() {
     if (!state.paused) return;
     state.paused = false;
     el.overlay.hidden = true;
+    el.overlay.classList.remove('seeking');
     if (state.mode === 'song' && state.cursor < state.timeline.length) {
-      var resumeAt = state.songTime;
       state.resolvedBars = [];
-      state.songTime = resumeAt - RESUME_COUNTDOWN;
-      state.countdownTo = resumeAt;
-      if (state.metronome) state.nextClick = Math.ceil(state.songTime / beatSeconds(state.song));
-      syncSongNotes();
+      state.rewind = { from: state.songTime, to: state.songTime - RESUME_COUNTDOWN, t: 0 };
     }
     state.running = true;
     updateDemoBadge();
@@ -962,6 +981,7 @@
   }
 
   function hideCountdown() {
+    state.rewind = null;   // pausa/salto/reinício no meio do rebobinar também o cancela
     state.countdownTo = null;
     countdownShown = null;
     el.countdown.hidden = true;
@@ -1380,6 +1400,20 @@
 
   function updateSong(dt) {
     if (!state.running || state.scrubbing) return;   // arrastando a barra: o relógio fica em pausa
+    // Rebobinando depois da pausa (ver resumeGame()): o relógio anda pra trás, suavizado
+    // (acelera e freia), e só no fim começa a contagem 3-2-1 e a música volta a andar.
+    if (state.rewind) {
+      var rw = state.rewind;
+      rw.t = Math.min(1, rw.t + dt / REWIND_ANIM);
+      var k = rw.t < 0.5 ? 2 * rw.t * rw.t : 1 - Math.pow(-2 * rw.t + 2, 2) / 2;
+      state.songTime = rw.from + (rw.to - rw.from) * k;
+      if (rw.t >= 1) {
+        state.rewind = null;
+        state.countdownTo = rw.from;
+        if (state.metronome) state.nextClick = Math.ceil(state.songTime / beatSeconds(state.song));
+      }
+      return;
+    }
     // Modo espera: a nota "segura" o relógio da música na própria linha de acerto até o
     // jogador tocar — o relógio nunca passa do tempo da nota ainda não resolvida, então
     // checkAutoMiss() nunca vê tempo suficiente pra estourar a janela e dar timeout.
