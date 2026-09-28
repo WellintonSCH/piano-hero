@@ -555,7 +555,8 @@
     var html = '';
     SPEED_MULTIPLIERS.forEach(function (mult) {
       html += '<option value="' + mult + '"' + (mult === state.speed ? ' selected' : '') + '>' +
-        Math.round(song.bpm * mult) + ' BPM' + (mult === 1 ? ' (original)' : '') + '</option>';
+        Math.round(song.bpm * mult) + ' BPM' + (mult === 1 ? ' (original)' : '') +
+        ' · ' + speedPointsLabel(mult) + '</option>';
     });
     el.setupSpeed.innerHTML = html;
     el.setupRanking.innerHTML = buildSongRankingHTML(song);
@@ -1088,7 +1089,8 @@
     if (!state.song) return;
     var opts = el.speed.options;
     for (var i = 0; i < opts.length && i < SPEED_MULTIPLIERS.length; i++) {
-      opts[i].textContent = Math.round(state.song.bpm * SPEED_MULTIPLIERS[i]) + ' BPM';
+      opts[i].textContent = Math.round(state.song.bpm * SPEED_MULTIPLIERS[i]) + ' BPM · ' +
+        speedPointsLabel(SPEED_MULTIPLIERS[i]);
     }
   }
 
@@ -1558,7 +1560,7 @@
     state.hits++;
     state.combo++;
     state.bestCombo = Math.max(state.bestCombo, state.combo);
-    state.score += (perfect ? 15 : 10) * multiplier();
+    state.score += Math.round((perfect ? 15 : 10) * multiplier() * speedMultiplier());
 
     if (state.effects) PH.render.burst(played, true);
 
@@ -1692,6 +1694,20 @@
 
   function multiplier() {
     return Math.min(1 + Math.floor(state.combo / 5), 5);
+  }
+
+  /**
+   * Bônus de velocidade (modo fase): tocar a música mais rápida vale mais pontos, mais lenta
+   * vale menos — a pontuação acompanha a dificuldade. É o próprio multiplicador de
+   * velocidade (0,5× a 1,5×), somado ao de combo. No modo livre não há BPM: sempre 1×.
+   */
+  function speedMultiplier() {
+    return state.mode === 'song' ? state.speed : 1;
+  }
+
+  /** Rótulo do bônus de pontos de uma velocidade, ex.: "pontos ×1,5". */
+  function speedPointsLabel(mult) {
+    return 'pontos ×' + String(mult).replace('.', ',');
   }
 
   function comboText() {
