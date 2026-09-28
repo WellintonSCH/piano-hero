@@ -135,6 +135,7 @@
         <div class="menu-buttons">
           <button id="btnLevels" type="button" class="primary">🎵 Fases</button>
           <button id="btnFree" type="button">🎲 Modo Livre</button>
+          <button id="btnRanking" type="button">🏆 Ranking</button>
         </div>
         <p class="midi-status" id="midiStatus">MIDI: verificando…</p>
         <p class="midi-status" id="pianoStatus">🎹 Som do piano carrega ao começar a jogar.</p>
@@ -145,6 +146,13 @@
         <p>Complete uma fase pra destravar a próxima.</p>
         <div class="level-list" id="levelList"></div>
         <button id="btnBackHome" type="button" class="ghost">Voltar</button>
+      </div>
+
+      <div class="overlay-card wide" id="screen-ranking" hidden>
+        <h1>🏆 Ranking</h1>
+        <p>Melhor pontuação registrada em cada fase, da maior pra menor.</p>
+        <div class="level-list" id="rankingList"></div>
+        <button id="btnBackHomeFromRanking" type="button" class="ghost">Voltar</button>
       </div>
 
       <div class="overlay-card pause-card" id="screen-pause" hidden>
@@ -169,13 +177,29 @@
     </div>
   </div>
 
-  <div id="scrubberItem" class="scrubber" hidden title="Arraste, clique ou role o mouse sobre o palco pra voltar/avançar na música">
-    <span id="scrubCurrent" class="scrub-time">0:00</span>
-    <div id="scrubTrack" class="scrub-track">
-      <div id="scrubFill" class="scrub-fill"></div>
-      <div id="scrubThumb" class="scrub-thumb"></div>
+  <div id="scrubberItem" class="scrubber" hidden>
+    <div class="scrub-row" title="Arraste, clique ou role o mouse sobre o palco pra voltar/avançar na música">
+      <span id="scrubCurrent" class="scrub-time">0:00</span>
+      <div id="scrubTrack" class="scrub-track">
+        <div id="scrubFill" class="scrub-fill"></div>
+        <div id="scrubThumb" class="scrub-thumb"></div>
+      </div>
+      <span id="scrubTotal" class="scrub-time">0:00</span>
     </div>
-    <span id="scrubTotal" class="scrub-time">0:00</span>
+    <div class="loop-row">
+      <span class="scrub-time" aria-hidden="true"></span>
+      <div id="loopTrack" class="loop-track" title="Arraste aqui pra marcar um trecho da música e repeti-lo">
+        <div id="loopRange" class="loop-range" hidden>
+          <div id="loopHandleA" class="loop-handle loop-handle-a" title="Ajustar início do trecho"></div>
+          <div id="loopHandleB" class="loop-handle loop-handle-b" title="Ajustar fim do trecho"></div>
+        </div>
+      </div>
+      <span class="scrub-time" aria-hidden="true"></span>
+    </div>
+    <div class="loop-controls">
+      <button id="loopToggleBtn" type="button" class="icon-btn ghost" aria-label="Repetir o trecho marcado" title="Repetir o trecho marcado" disabled>🔁 Repetir trecho</button>
+      <button id="loopClearBtn" type="button" class="icon-btn ghost" aria-label="Limpar marcação do trecho" title="Limpar marcação" hidden>✕</button>
+    </div>
   </div>
 
   <footer id="tips">

@@ -37,6 +37,9 @@
     songDuration: 0,       // modo song: duração total da timeline (fim da última nota), em segundos
     demoGen: 0,            // incrementa a cada reset()/seekTo() — invalida setTimeouts velhos da demonstração
     scrubbing: false,      // true enquanto o jogador arrasta a barra de progresso (suspende o relógio)
+    loopAFrac: null,       // modo fase: início do trecho marcado pra repetir, em fração (0..1) da duração
+    loopBFrac: null,       // modo fase: fim do trecho marcado pra repetir, em fração (0..1) da duração
+    loopEnabled: false,    // modo fase: true = ao chegar em loopBFrac, volta pra loopAFrac automaticamente
     speed: 1,              // multiplicador de velocidade (afeta o BPM efetivo da fase)
     waitMode: false,       // modo fase: true = a música pausa na nota até o jogador acertar
     metronome: false,      // modo fase: true = clique de referência em cada tempo (semínima)
@@ -93,6 +96,12 @@
     el.scrubThumb = document.getElementById('scrubThumb');
     el.scrubCurrent = document.getElementById('scrubCurrent');
     el.scrubTotal = document.getElementById('scrubTotal');
+    el.loopTrack = document.getElementById('loopTrack');
+    el.loopRange = document.getElementById('loopRange');
+    el.loopHandleA = document.getElementById('loopHandleA');
+    el.loopHandleB = document.getElementById('loopHandleB');
+    el.loopToggleBtn = document.getElementById('loopToggleBtn');
+    el.loopClearBtn = document.getElementById('loopClearBtn');
     el.menuBtn = document.getElementById('menuBtn');
     el.pauseBtn = document.getElementById('pauseBtn');
     el.optionsBtn = document.getElementById('optionsBtn');
@@ -107,9 +116,11 @@
 
     el.screenHome = document.getElementById('screen-home');
     el.screenLevels = document.getElementById('screen-levels');
+    el.screenRanking = document.getElementById('screen-ranking');
     el.screenComplete = document.getElementById('screen-complete');
     el.screenPause = document.getElementById('screen-pause');
     el.levelList = document.getElementById('levelList');
+    el.rankingList = document.getElementById('rankingList');
     el.completeTitle = document.getElementById('completeTitle');
     el.completeStats = document.getElementById('completeStats');
     el.completeReport = document.getElementById('completeReport');
@@ -136,9 +147,12 @@
     document.getElementById('btnFree').addEventListener('click', startFree);
     document.getElementById('btnLevels').addEventListener('click', showLevels);
     document.getElementById('btnBackHome').addEventListener('click', showHome);
+    document.getElementById('btnRanking').addEventListener('click', showRanking);
+    document.getElementById('btnBackHomeFromRanking').addEventListener('click', showHome);
     document.getElementById('btnToLevelsFromComplete').addEventListener('click', showLevels);
     document.getElementById('btnRetryLevel').addEventListener('click', function () {
       el.overlay.hidden = true;
+      updateModeUI();   // a tela de fim escondeu a barra de progresso (ver showScreen)
       state.running = true;
       reset();
     });
@@ -168,6 +182,7 @@
     document.addEventListener('click', function () { setOptionsOpen(false); });
 
     initScrubber();
+    initLoopTrack();
 
     el.pauseBtn.addEventListener('click', togglePause);
 
@@ -288,9 +303,15 @@
   function showScreen(name) {
     el.screenHome.hidden = name !== 'home';
     el.screenLevels.hidden = name !== 'levels';
+    el.screenRanking.hidden = name !== 'ranking';
     el.screenComplete.hidden = name !== 'complete';
     el.screenPause.hidden = name !== 'pause';
     el.overlay.hidden = false;
+    // Fora da partida (menu, lista de fases, ranking, fim de fase) a barra de progresso some:
+    // senão ela fica sobrando embaixo do palco, deixa a página mais alta que a janela e a roda
+    // do mouse acaba rolando a página/mexendo na música em vez de rolar a lista de fases.
+    // Na pausa ela continua visível, pra dar pra voltar/avançar antes de retomar.
+    el.scrubberItem.hidden = !(state.mode === 'song' && name === 'pause');
     setOptionsOpen(false);   // evita o menu de opções ficar flutuando por cima da tela nova
   }
 
@@ -299,6 +320,42 @@
   function showLevels() {
     renderLevelList();
     showScreen('levels');
+  }
+
+  function showRanking() {
+    renderRankingList();
+    showScreen('ranking');
+  }
+
+  function renderRankingList() {
+    var ranked = [];
+    for (var i = 0; i < PH.songs.length; i++) {
+      var song = PH.songs[i];
+      var best = progress.best[song.id];
+      if (best) ranked.push({ song: song, best: best });
+    }
+    ranked.sort(function (a, b) { return b.best.score - a.best.score; });
+
+    if (!ranked.length) {
+      el.rankingList.innerHTML = '<p class="ranking-empty">Nenhuma fase completada ainda — jogue uma fase pra aparecer aqui.</p>';
+      return;
+    }
+
+    var MEDALS = ['🥇', '🥈', '🥉'];
+    var html = '';
+    for (var r = 0; r < ranked.length; r++) {
+      var entry = ranked[r];
+      var dateText = entry.best.date ? new Date(entry.best.date).toLocaleDateString('pt-BR') : '';
+      html += '<div class="level-row ranking-row">' +
+        '<span class="level-num">' + (MEDALS[r] || (r + 1)) + '</span>' +
+        '<span class="level-info"><strong>' + entry.song.title + '</strong>' +
+        '<small>' + entry.best.accuracy + '% de precisão' +
+        (entry.best.combo ? ' · combo ' + entry.best.combo : '') +
+        (dateText ? ' · ' + dateText : '') + '</small></span>' +
+        '<span class="level-score">' + entry.best.score + ' pts</span>' +
+        '</div>';
+    }
+    el.rankingList.innerHTML = html;
   }
 
   function renderLevelList() {
@@ -382,11 +439,137 @@
     var WHEEL_STEP = 1.0;   // segundos por notch da roda
     function onWheel(e) {
       if (state.mode !== 'song' || !state.songDuration) return;
+      // Com uma tela de menu aberta por cima do palco (lista de fases, ranking, fim de fase),
+      // a roda deve rolar essa tela normalmente, não mexer na posição da música.
+      if (!el.overlay.hidden && el.screenPause.hidden) return;
       e.preventDefault();
       seekTo(state.songTime + (e.deltaY > 0 ? WHEEL_STEP : -WHEEL_STEP));
     }
     document.getElementById('stage').addEventListener('wheel', onWheel, { passive: false });
     el.scrubberItem.addEventListener('wheel', onWheel, { passive: false });
+  }
+
+  /* ---------------- repetir trecho (loop A/B, prática) ---------------- */
+
+  /**
+   * As marcações do trecho ficam guardadas como fração (0..1) da duração da música, não em
+   * segundos absolutos — assim sobrevivem a uma troca de velocidade (`speed`), que reconstrói
+   * a timeline inteira com um `songDuration` diferente (ver `reset()`/`buildTimeline()`); a
+   * mesma posição musical continua valendo a mesma fração mesmo com a duração mudando.
+   */
+  var LOOP_MIN_FRAC = 0.008;   // trechos menores que ~0.8% da música são tratados como clique sem querer
+
+  function clearLoop() {
+    state.loopAFrac = null;
+    state.loopBFrac = null;
+    state.loopEnabled = false;
+    updateLoopUI();
+  }
+
+  function toggleLoopEnabled() {
+    if (state.loopAFrac == null || state.loopBFrac == null) return;
+    state.loopEnabled = !state.loopEnabled;
+    updateLoopUI();
+  }
+
+  /** Reflete o estado do loop nos botões e no realce sobre a faixa dedicada abaixo da barra. */
+  function updateLoopUI() {
+    var hasA = state.loopAFrac != null;
+    var hasB = state.loopBFrac != null;
+    var hasRange = hasA && hasB;
+    el.loopToggleBtn.disabled = !hasRange;
+    el.loopToggleBtn.classList.toggle('active', state.loopEnabled);
+    el.loopClearBtn.hidden = !hasA && !hasB;
+
+    el.loopRange.hidden = !hasRange;
+    if (hasRange) {
+      el.loopRange.style.left = (state.loopAFrac * 100) + '%';
+      el.loopRange.style.width = ((state.loopBFrac - state.loopAFrac) * 100) + '%';
+    }
+  }
+
+  /**
+   * Arrastar na faixa dedicada (`#loopTrack`, abaixo da barra de progresso) define o trecho a
+   * repetir num gesto só: começar num ponto vazio desenha uma seleção nova entre onde o arrasto
+   * começou e onde está agora; começar em cima de uma alça (`#loopHandleA`/`B`) ajusta só aquela
+   * ponta; começar no meio do realce dourado (`#loopRange`) arrasta o trecho inteiro sem mudar o
+   * tamanho dele. Usa Pointer Events + `setPointerCapture`, igual ao `initScrubber()` da barra
+   * principal, mas é uma faixa própria — nunca compete com o gesto de "pular no tempo" de lá.
+   */
+  function initLoopTrack() {
+    var mode = null;   // null | 'create' | 'handleA' | 'handleB' | 'move'
+    var startFrac = 0, origA = 0, origB = 0;
+
+    function fracFromPointer(e) {
+      var rect = el.loopTrack.getBoundingClientRect();
+      var frac = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0;
+      return Math.max(0, Math.min(1, frac));
+    }
+
+    function begin(e) {
+      if (state.mode !== 'song' || !state.songDuration) return;
+      var frac = fracFromPointer(e);
+      if (e.target === el.loopHandleA) {
+        mode = 'handleA';
+      } else if (e.target === el.loopHandleB) {
+        mode = 'handleB';
+      } else if (e.target === el.loopRange) {
+        mode = 'move';
+        startFrac = frac;
+        origA = state.loopAFrac;
+        origB = state.loopBFrac;
+      } else {
+        mode = 'create';
+        startFrac = frac;
+        state.loopAFrac = frac;
+        state.loopBFrac = frac;
+        state.loopEnabled = false;
+      }
+      el.loopTrack.setPointerCapture(e.pointerId);
+      updateLoopUI();
+    }
+
+    function move(e) {
+      if (!mode) return;
+      var frac = fracFromPointer(e);
+      if (mode === 'create') {
+        state.loopAFrac = Math.min(startFrac, frac);
+        state.loopBFrac = Math.max(startFrac, frac);
+      } else if (mode === 'handleA') {
+        state.loopAFrac = Math.min(frac, state.loopBFrac - LOOP_MIN_FRAC);
+      } else if (mode === 'handleB') {
+        state.loopBFrac = Math.max(frac, state.loopAFrac + LOOP_MIN_FRAC);
+      } else if (mode === 'move') {
+        var width = origB - origA;
+        var newA = Math.max(0, Math.min(1 - width, origA + (frac - startFrac)));
+        state.loopAFrac = newA;
+        state.loopBFrac = newA + width;
+      }
+      updateLoopUI();
+    }
+
+    function end(e) {
+      if (!mode) return;
+      // Um "clique" (arrasto praticamente nulo) ao criar não vira um trecho de duração ~0:
+      // é descartado, pra não travar o loop numa marcação acidental de um só ponto.
+      if (mode === 'create' && state.loopBFrac - state.loopAFrac < LOOP_MIN_FRAC) {
+        state.loopAFrac = null;
+        state.loopBFrac = null;
+      } else if (mode === 'create') {
+        state.loopEnabled = true;   // desenhar um trecho novo já liga a repetição
+      }
+      mode = null;
+      try { el.loopTrack.releasePointerCapture(e.pointerId); } catch (err) { /* já liberado */ }
+      updateLoopUI();
+    }
+
+    el.loopTrack.addEventListener('pointerdown', begin);
+    el.loopTrack.addEventListener('pointermove', move);
+    el.loopTrack.addEventListener('pointerup', end);
+    el.loopTrack.addEventListener('pointercancel', end);
+
+    el.loopToggleBtn.addEventListener('click', toggleLoopEnabled);
+    el.loopClearBtn.addEventListener('click', clearLoop);
   }
 
   /* ---------------- menu de opções ---------------- */
@@ -466,11 +649,11 @@
     return PH.songs[idx + 1];
   }
 
-  function saveProgress(songId, acc, score) {
+  function saveProgress(songId, acc, score, combo) {
     var idx = songIndexOf(songId);
     var best = progress.best[songId];
-    if (!best || acc > best.accuracy || (acc === best.accuracy && score > best.score)) {
-      progress.best[songId] = { accuracy: acc, score: score };
+    if (!best || score > best.score || (score === best.score && acc > best.accuracy)) {
+      progress.best[songId] = { accuracy: acc, score: score, combo: combo, date: Date.now() };
     }
     if (idx >= 0 && idx + 1 < PH.songs.length) {
       progress.unlocked = Math.max(progress.unlocked, idx + 1);
@@ -495,6 +678,7 @@
   function startSong(song) {
     state.mode = 'song';
     state.song = song;
+    clearLoop();   // marcações de trecho são por música — não fazem sentido levadas pra outra
     PH.audio.unlock();
     watchPianoLoad();
     updateModeUI();
@@ -569,7 +753,16 @@
     for (var i = 0; i < song.notes.length; i++) {
       var durTicks = song.durations[i];
       var sustainTicks = song.sustainDurations ? song.sustainDurations[i] : durTicks;
-      var midis = Array.isArray(song.notes[i]) ? song.notes[i].slice() : [song.notes[i]];
+      var raw = Array.isArray(song.notes[i]) ? song.notes[i] : [song.notes[i]];
+      // Teclado compacto (celular, 2 oitavas — ver notes.js): notas fora da faixa descem/
+      // sobem de oitava pra caber. Dois sons do acorde podem cair na mesma tecla depois
+      // disso (ex.: baixo e melodia em oitavas) — viram uma só, senão o acorde exigiria
+      // tocar a mesma tecla duas vezes e nunca terminaria.
+      var midis = [];
+      raw.forEach(function (midi) {
+        var fitted = PH.notes.fitMidi(midi);
+        if (midis.indexOf(fitted) === -1) midis.push(fitted);
+      });
       out.push({
         midis: midis, time: ticks * secPerTick,
         dur: durTicks * secPerTick, sustain: sustainTicks * secPerTick,
@@ -807,6 +1000,14 @@
       state.songTime += dt;
     }
     if (wasNegative && state.songTime >= 0) showFeedback('Vai!', 'good');
+    // Repetir trecho: ao alcançar (ou passar) a marca de fim, volta pra marca de início
+    // usando `seekTo()` (nunca setando `state.songTime` direto), pra também resolver
+    // `cursor`/`targetMidis` de novo a partir da nova posição.
+    if (state.loopEnabled && state.loopBFrac != null && state.loopAFrac != null &&
+        state.songTime >= state.loopBFrac * state.songDuration) {
+      seekTo(state.loopAFrac * state.songDuration);
+      return;
+    }
     if (state.demoMode) {
       advanceDemo();
     } else {
@@ -952,7 +1153,7 @@
     state.running = false;
     var total = state.hits + state.misses;
     var acc = total ? Math.round(state.hits / total * 100) : 100;
-    saveProgress(state.song.id, acc, state.score);
+    saveProgress(state.song.id, acc, state.score, state.bestCombo);
 
     var summary = summarizeLog();
     var hasNext = !!nextSong();

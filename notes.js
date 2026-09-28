@@ -9,7 +9,20 @@ window.PianoHero = window.PianoHero || {};
   // caber músicas de verdade (ex.: um Cânone em Ré com voz aguda e baixo grave), não só
   // a faixa de 2 oitavas do modo livre. Gerado a partir da faixa, não escrito nota a nota
   // à mão, pra facilitar mudar o alcance depois (só trocar MIN_MIDI/MAX_MIDI).
-  var MIN_MIDI = 36, MAX_MIDI = 96;
+  //
+  // Celular (tela de toque pequena): 5 oitavas dariam ~10px por tecla branca, impossível
+  // de tocar com o dedo — então o teclado encolhe pra 2 oitavas (Dó3–Dó5, a mesma faixa
+  // das amostras gravadas e do mapa do teclado do PC). Decidido uma vez, no carregamento,
+  // pelo menor lado da tela (não muda ao girar o aparelho). `?oitavas=2` / `?oitavas=5` na
+  // URL força um dos dois, pra testar no PC. As fases com notas fora dessa faixa são
+  // trazidas pra dentro dela por oitava em `fitMidi()` (ver buildTimeline() no main.js).
+  var COMPACT = (function () {
+    var forced = /[?&]oitavas=(\d)/.exec(location.search);
+    if (forced) return forced[1] === '2';
+    var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    return !!coarse && Math.min(screen.width, screen.height) < 600;
+  })();
+  var MIN_MIDI = COMPACT ? 48 : 36, MAX_MIDI = COMPACT ? 72 : 96;
   var WHITE_PC = [0, 2, 4, 5, 7, 9, 11];   // classes de altura das teclas brancas (Dó Ré Mi Fá Sol Lá Si)
   var BLACK_PC = [1, 3, 6, 8, 10];         // classes de altura das teclas pretas
 
@@ -57,6 +70,17 @@ window.PianoHero = window.PianoHero || {};
   }
 
   /**
+   * Traz uma nota pra dentro do teclado desenhado subindo/descendo de oitava em oitava —
+   * mantém a nota (classe de altura) e fica o mais perto possível da oitava original.
+   * No teclado completo (5 oitavas) as músicas já cabem e isto não muda nada.
+   */
+  function fitMidi(midi) {
+    while (midi < MIN_MIDI) midi += 12;
+    while (midi > MAX_MIDI) midi -= 12;
+    return midi;
+  }
+
+  /**
    * Fluxo infinito de notas (modo livre). Não sorteia nota repetida em seguida
    * e, no modo "scale", prefere saltos pequenos para soar como melodia.
    */
@@ -94,6 +118,8 @@ window.PianoHero = window.PianoHero || {};
   PH.notes = {
     MIN_MIDI: MIN_MIDI,
     MAX_MIDI: MAX_MIDI,
+    COMPACT: COMPACT,
+    fitMidi: fitMidi,
     WHITE: WHITE,
     BLACK: BLACK,
     POOLS: POOLS,

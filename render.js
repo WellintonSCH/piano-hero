@@ -350,7 +350,11 @@ window.PianoHero = window.PianoHero || {};
       }
 
       function label(key, color, y) {
-        var txt = PH.input && PH.input.labelFor ? PH.input.labelFor(key.midi) : '';
+        // No celular (teclado compacto) não há teclado de PC — a letra da tecla não diz nada,
+        // então as brancas mostram o nome da nota (as pretas são estreitas demais pra texto).
+        var txt = PH.notes.COMPACT
+          ? (key.black ? '' : PH.notes.noteName(key.midi))
+          : (PH.input && PH.input.labelFor ? PH.input.labelFor(key.midi) : '');
         if (!txt) return;
         ctx.fillStyle = color;
         ctx.font = '11px system-ui, sans-serif';
