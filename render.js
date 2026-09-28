@@ -31,12 +31,14 @@ window.PianoHero = window.PianoHero || {};
     // sobra metade da tela vazia embaixo. Usa a altura da janela, descontando HUD, barra
     // de progresso e rodapé (~330px), pra notas terem mais espaço pra cair e os menus
     // (que ficam dentro do palco) caberem sem rolar.
-    // Deitado (paisagem, o jeito de jogar no celular): a tela é baixa (~360px), então o
-    // palco ocupa quase tudo, descontando só a HUD em uma linha (~52px; no celular não há
-    // barra de progresso, ver style.css).
+    // Deitado (paisagem, o jeito de jogar no celular): o palco vai do topo dele até o fim
+    // da área VISÍVEL da tela, medido de verdade (não um desconto fixo): a HUD aparece/some
+    // entre menu e partida e a barra do Safari entra/sai, e com um desconto fixo o palco
+    // ficava mais alto que a tela e o teclado era cortado embaixo. `fitCheck()` (chamado a
+    // cada quadro em draw()) refaz esta conta sempre que esse espaço muda.
     if (PH.notes.COMPACT) {
       cssH = window.innerWidth > window.innerHeight
-        ? Math.round(Math.max(200, window.innerHeight - 52))
+        ? Math.round(Math.max(160, viewportHeight() - canvas.getBoundingClientRect().top - 6))
         : Math.round(Math.min(760, Math.max(cssH, window.innerHeight - 330)));
     }
     var dpr = window.devicePixelRatio || 1;
@@ -47,6 +49,29 @@ window.PianoHero = window.PianoHero || {};
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     buildLayout(cssW, cssH);
+  }
+
+  /** Altura da área de fato visível (no Safari, sem a barra de endereço/ferramentas). */
+  function viewportHeight() {
+    return window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  }
+
+  /**
+   * Celular: refaz o tamanho do palco quando o espaço disponível muda sem evento de
+   * `resize` confiável — HUD aparecendo/sumindo (menu ↔ partida), barra do Safari entrando
+   * e saindo, rotação que dispara `resize` antes do layout assentar. Compara só números
+   * baratos (largura, topo do palco, altura visível); mudar a altura do próprio canvas não
+   * altera nenhum deles, então não entra em laço.
+   */
+  var lastFitKey = '';
+  function fitCheck() {
+    if (!PH.notes.COMPACT || !canvas.parentNode.clientWidth) return;   // oculto (celular em pé)
+    var key = canvas.parentNode.clientWidth + ',' + Math.round(canvas.getBoundingClientRect().top) +
+      ',' + Math.round(viewportHeight());
+    if (key !== lastFitKey) {
+      lastFitKey = key;
+      resize();
+    }
   }
 
   function buildLayout(W, H) {
@@ -173,6 +198,7 @@ window.PianoHero = window.PianoHero || {};
    *  - flashes[midi] = { t, good }
    */
   function draw(state, dt) {
+    fitCheck();
     updateParticles(dt);
 
     var W = layout.W, H = layout.H;

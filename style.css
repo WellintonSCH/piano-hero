@@ -1410,3 +1410,12 @@ html.compact .icon-controls { gap: 12px; }
 }
 .vscrub.dragging .vscrub-time,
 #stage:has(#overlay.see-through:not([hidden])) .vscrub-time { opacity: 1; }
+
+/* Celular: a página nunca rola nem "quica" (Safari) — tudo cabe na tela, e o palco se
+   ajusta ao espaço que sobra (fitCheck() no render.js). Sem isso, um arrasto na pista
+   podia rolar a página e deslocar o jogo, cortando o teclado embaixo. */
+html.compact, html.compact body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
