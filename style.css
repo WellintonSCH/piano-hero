@@ -667,6 +667,52 @@ button.ghost:hover { color: var(--text); }
   font-size: 13px;
 }
 
+/* Seções de escolha (mão / velocidade) */
+.setup-section { margin: 0 0 12px; text-align: left; }
+.setup-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.segmented { display: flex; gap: 6px; flex-wrap: wrap; }
+.segmented button { flex: 1 1 0; padding: 8px 10px; }
+.segmented button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* Velocidade: qualquer BPM — slider + ±1 + número grande */
+.bpm-picker { display: flex; align-items: center; gap: 8px; }
+.bpm-picker input[type="range"] { flex: 1 1 auto; min-width: 80px; accent-color: var(--accent); }
+.bpm-step { flex: 0 0 auto; width: 36px; height: 36px; padding: 0; font-size: 20px; font-weight: 700; }
+.bpm-out { flex: 0 0 auto; min-width: 84px; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; color: var(--muted); font-size: 12px; }
+.bpm-out strong { font-size: 22px; color: var(--text); font-variant-numeric: tabular-nums; }
+.bpm-out small { font-size: 10.5px; }
+.bpm-reset { flex: 0 0 auto; padding: 6px 10px; font-size: 12px; }
+#optionsPanel input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+/* Pontuação de antes: última tentativa + recordes de precisão e de velocidade */
+.setup-last { margin: 0 0 14px; text-align: left; }
+.last-row { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; font-size: 13px; }
+.last-label { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.last-val { color: var(--text); font-variant-numeric: tabular-nums; }
+.last-records { display: flex; gap: 8px; }
+.last-chip {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel-2);
+}
+.last-chip small { font-size: 10.5px; color: var(--muted); }
+.last-chip strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.last-chip.acc strong { color: var(--good); }
+.last-chip.spd strong { color: var(--gold); }
+
 .icon-circle.small {
   width: 40px;
   height: 40px;
@@ -1513,6 +1559,35 @@ body.song-mode .hud-controls .seek-btn.hud-icon { display: inline-flex; padding:
 }
 #completeReport[hidden] { display: none; }
 #completeReport .report { margin-top: 8px; }
+
+/* ---------- Mãos: bolinha de cor, selo "Praticando" e relatório por mão ---------- */
+
+.hand-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.hand-dot.R { background: var(--accent); }
+.hand-dot.L { background: var(--gold); }
+.hand-badge {
+  align-self: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 6px 13px;
+  white-space: nowrap;
+}
+.hand-badge.hand-L { background: var(--gold); }
+.hand-badge[hidden] { display: none !important; }
+
+.complete-hands { max-width: 380px; margin: 0 auto 8px; }
+.hand-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 13px; }
+.hand-name { flex: 0 0 120px; text-align: left; white-space: nowrap; }
+.hand-bar { flex: 1 1 auto; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.hand-fill { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width .9s cubic-bezier(.2, .8, .2, 1); }
+.hand-L .hand-fill { background: var(--gold); }
+.complete-hands.filled .hand-fill { width: var(--pct); }
+.hand-pct { flex: 0 0 40px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.hand-count { flex: 0 0 56px; text-align: right; color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.hand-note { margin: 4px 0 0; font-size: 12px; }
 
 /* ---------- Celular deitado: o jogo ocupa a tela inteira ---------- */
 

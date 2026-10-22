@@ -27,10 +27,13 @@
   var REWIND_ANIM = 0.6;     // segundos (reais) da animação das notas voltando pra cima ao continuar
   var SEEK_STEP = 5;         // segundos por toque nos botões ⏪ / ⏩
   var MAX_SCORES = 5;        // quantas tentativas cada fase guarda no próprio ranking
+  var BPM_MIN = 20;          // BPM mais lento do seletor de velocidade (qualquer valor inteiro até o máximo)
+  var BPM_MAX_FACTOR = 2;    // BPM mais rápido do seletor = BPM original da fase × isso
+  var SPEED_RECORD_MIN_ACC = 80;   // precisão mínima (%) pra uma tentativa valer como recorde de velocidade
 
   var el = {};
   var sequence = new PH.notes.Sequence('white');
-  var progress = { unlocked: 0, best: {}, scores: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
+  var progress = loadProgress();   // recarregado em init(), junto com as preferências
 
   var state = {
     mode: 'free',         // 'free' ou 'song'
@@ -137,7 +140,10 @@
     el.screenSong = document.getElementById('screen-song');
     el.setupTitle = document.getElementById('setupTitle');
     el.setupSubtitle = document.getElementById('setupSubtitle');
-    el.setupSpeed = document.getElementById('setupSpeed');
+    el.setupBpm = document.getElementById('setupBpm');
+    el.setupBpmOut = document.getElementById('setupBpmOut');
+    el.setupLast = document.getElementById('setupLast');
+    el.speedOut = document.getElementById('speedOut');
     el.setupRanking = document.getElementById('setupRanking');
     el.setupRankingBox = document.getElementById('setupRankingBox');
     el.setupRankingSummary = document.getElementById('setupRankingSummary');
@@ -152,9 +158,13 @@
       var b = e.target.closest('[data-hand]');
       if (b) { state.practiceHand = b.getAttribute('data-hand'); refreshSegmented(); }
     });
-    el.setupSpeed.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-speed]');
-      if (b) { setupSpeedValue = parseFloat(b.getAttribute('data-speed')); refreshSegmented(); }
+    // Velocidade: qualquer BPM inteiro — arrastar o slider ou ±1 nos botões. Só mexe no
+    // valor escolhido (barato); a linha do tempo só é montada ao começar a partida.
+    el.setupBpm.addEventListener('input', function () { setSetupBpm(parseInt(el.setupBpm.value, 10)); });
+    document.getElementById('setupBpmMinus').addEventListener('click', function () { setSetupBpm(setupBpmValue - 1); });
+    document.getElementById('setupBpmPlus').addEventListener('click', function () { setSetupBpm(setupBpmValue + 1); });
+    document.getElementById('setupBpmReset').addEventListener('click', function () {
+      if (setupSong) setSetupBpm(setupSong.bpm);
     });
     el.levelList = document.getElementById('levelList');
     el.rankingList = document.getElementById('rankingList');
@@ -271,7 +281,11 @@
       }
     });
 
-    el.hint.addEventListener('change', function () { state.hint = el.hint.checked; });
+    el.hint.addEventListener('change', function () {
+      state.hint = el.hint.checked;
+      progress.prefs.hint = state.hint;
+      saveProgressState();
+    });
 
     el.effectsToggle.addEventListener('change', function () {
       state.effects = el.effectsToggle.checked;
@@ -288,14 +302,23 @@
 
     el.difficulty.addEventListener('change', function () {
       sequence.setMode(el.difficulty.value);
+      progress.prefs.difficulty = el.difficulty.value;
+      saveProgressState();
       reset();
     });
 
+    // Slider de BPM do menu ⚙: enquanto arrasta só atualiza o número; ao soltar, aplica e
+    // recomeça a fase na nova velocidade (refazer a linha do tempo a cada pixel pesaria).
+    el.speed.addEventListener('input', function () {
+      el.speedOut.textContent = el.speed.value + ' BPM';
+    });
     el.speed.addEventListener('change', function () {
-      state.speed = parseFloat(el.speed.value) || 1;
-      progress.prefs.speed = state.speed;
+      if (state.mode !== 'song' || !state.song) return;
+      var bpm = parseInt(el.speed.value, 10);
+      state.speed = bpm / state.song.bpm;
+      progress.prefs.bpm[state.song.id] = bpm;
       saveProgressState();
-      if (state.mode === 'song') reset();   // reaplica a nova velocidade à fase atual
+      reset();   // reaplica a nova velocidade à fase atual
     });
 
     el.waitToggle.addEventListener('change', function () {
@@ -331,14 +354,18 @@
       updateLatencyPanel();
     });
 
+    // Volta com as mesmas opções da última partida (salvas a cada mudança, ver loadProgress()).
     progress = loadProgress();
-    state.speed = progress.prefs.speed;
     state.effects = progress.prefs.effects;
+    state.hint = progress.prefs.hint;
+    state.practiceHand = progress.prefs.hand;
+    el.hint.checked = state.hint;
+    el.difficulty.value = progress.prefs.difficulty;
+    sequence.setMode(el.difficulty.value);
     state.waitMode = progress.prefs.wait;
     state.metronome = progress.prefs.metronome;
     state.mutePiano = progress.prefs.mutePiano;
     state.demoMode = progress.prefs.demo;
-    el.speed.value = String(state.speed);
     el.effectsToggle.checked = state.effects;
     el.waitToggle.checked = state.waitMode;
     el.metronomeToggle.checked = state.metronome;
@@ -478,7 +505,7 @@
       html += '<div class="level-row ranking-row">' +
         '<span class="level-num">' + (MEDALS[r] || (r + 1)) + '</span>' +
         '<span class="level-info"><strong>' + entry.song.title + '</strong>' +
-        '<small>' + entry.best.accuracy + '% de precisão' +
+        '<small>' + entry.best.accuracy + '% de precisão · ' + entryBpm(entry.song, entry.best) + ' BPM' +
         (entry.best.combo ? ' · combo ' + entry.best.combo : '') +
         (dateText ? ' · ' + dateText : '') + '</small></span>' +
         '<span class="level-score">' + entry.best.score + ' pts</span>' +
@@ -575,13 +602,13 @@
   /* ---------------- escolher como tocar a fase ---------------- */
 
   var setupSong = null;
-  var setupSpeedValue = 1;
+  var setupBpmValue = 100;
 
   var HAND_NAMES = { R: 'mão direita', L: 'mão esquerda', both: 'duas mãos' };
 
   /**
    * Tela entre o mapa e a partida, organizada de cima pra baixo: MÃO a praticar (só em
-   * músicas que usam as duas), VELOCIDADE (botões com o BPM real e o bônus de pontos) e,
+   * músicas que usam as duas), VELOCIDADE (qualquer BPM, slider + ±1) e,
    * por último, os botões que começam a partida — um por modo (Jogar / Modo espera /
    * Demonstração). O ranking da fase fica recolhido no fim. As escolhas só sincronizam os
    * mesmos toggles/preferências do menu ⚙ — não é um estado paralelo.
@@ -607,13 +634,13 @@
     if (!twoHands) state.practiceHand = 'both';
     el.setupHandHint.textContent = 'Praticando uma mão, a outra toca sozinha no tempo certo.';
 
-    setupSpeedValue = state.speed;
-    el.setupSpeed.innerHTML = SPEED_MULTIPLIERS.map(function (mult) {
-      return '<button type="button" role="radio" data-speed="' + mult + '">' +
-        '<strong>' + Math.round(song.bpm * mult) + '</strong>' +
-        '<small>' + (mult === 1 ? 'original' : '×' + String(mult).replace('.', ',') + ' pts') + '</small></button>';
-    }).join('');
+    if (twoHands) state.practiceHand = progress.prefs.hand;
+    el.setupBpm.min = bpmMin(song);
+    el.setupBpm.max = bpmMax(song);
+    setSetupBpm(savedBpm(song));
     refreshSegmented();
+    el.setupLast.innerHTML = listen ? '' : buildLastScoreHTML(song);
+    el.setupLast.hidden = !el.setupLast.innerHTML;
 
     var list = scoresFor(song.id);
     el.setupRanking.innerHTML = buildSongRankingHTML(song);
@@ -624,18 +651,63 @@
     showScreen('song');
   }
 
-  /** Marca o botão escolhido nos grupos de botões (mão e velocidade). */
+  /** Marca o botão escolhido no grupo de botões da mão. */
   function refreshSegmented() {
     [].forEach.call(el.setupHand.querySelectorAll('[data-hand]'), function (b) {
       var on = b.getAttribute('data-hand') === state.practiceHand;
       b.classList.toggle('active', on);
       b.setAttribute('aria-checked', on ? 'true' : 'false');
     });
-    [].forEach.call(el.setupSpeed.querySelectorAll('[data-speed]'), function (b) {
-      var on = parseFloat(b.getAttribute('data-speed')) === setupSpeedValue;
-      b.classList.toggle('active', on);
-      b.setAttribute('aria-checked', on ? 'true' : 'false');
-    });
+  }
+
+  /* Velocidade em BPM: qualquer inteiro entre BPM_MIN e o original × BPM_MAX_FACTOR.
+     `state.speed` continua sendo o multiplicador interno (BPM escolhido ÷ BPM da fase). */
+  function bpmMin(song) { return Math.min(BPM_MIN, song.bpm); }
+  function bpmMax(song) { return Math.round(song.bpm * BPM_MAX_FACTOR); }
+  function clampBpm(song, bpm) { return Math.max(bpmMin(song), Math.min(bpmMax(song), Math.round(bpm) || song.bpm)); }
+  /** BPM em que a fase foi jogada da última vez (ou o original, se nunca foi). */
+  function savedBpm(song) { return clampBpm(song, progress.prefs.bpm[song.id] || song.bpm); }
+
+  function setSetupBpm(bpm) {
+    if (!setupSong) return;
+    setupBpmValue = clampBpm(setupSong, bpm);
+    el.setupBpm.value = setupBpmValue;
+    var pct = Math.round(setupBpmValue / setupSong.bpm * 100);
+    el.setupBpmOut.innerHTML = '<strong>' + setupBpmValue + '</strong> BPM' +
+      '<small>' + (pct === 100 ? 'original' : pct + '% do original') + '</small>';
+  }
+
+  /** BPM de uma tentativa salva (as antigas guardavam só o multiplicador `speed`). */
+  function entryBpm(song, e) {
+    return e.bpm || Math.round(song.bpm * (e.speed || 1));
+  }
+
+  /**
+   * "Sua pontuação" antes de começar: a última tentativa e os dois recordes da fase —
+   * PRECISÃO (maior %) e VELOCIDADE (maior BPM terminado no ritmo, sem modo espera,
+   * com pelo menos SPEED_RECORD_MIN_ACC% de precisão).
+   */
+  function buildLastScoreHTML(song) {
+    var last = progress.last[song.id];
+    var rec = progress.records[song.id] || {};
+    if (!last && !rec.accuracy && !rec.speed) return '';
+    var html = '';
+    if (last) {
+      html += '<div class="last-row"><span class="last-label">Última vez</span>' +
+        '<span class="last-val">' + last.accuracy + '% · ' + entryBpm(song, last) + ' BPM' +
+        (last.wait ? ' · espera' : '') +
+        (last.hand && last.hand !== 'both' ? ' · só ' + HAND_NAMES[last.hand] : '') +
+        ' · ' + last.score + ' pts</span></div>';
+    }
+    html += '<div class="last-records">' +
+      '<span class="last-chip acc"><small>Recorde de precisão</small><strong>' +
+        (rec.accuracy ? rec.accuracy.accuracy + '%' : '—') + '</strong>' +
+        (rec.accuracy ? '<small>a ' + entryBpm(song, rec.accuracy) + ' BPM</small>' : '') + '</span>' +
+      '<span class="last-chip spd"><small>Recorde de velocidade</small><strong>' +
+        (rec.speed ? entryBpm(song, rec.speed) + ' BPM' : '—') + '</strong>' +
+        '<small>' + (rec.speed ? 'com ' + rec.speed.accuracy + '%' : 'no ritmo, ≥' + SPEED_RECORD_MIN_ACC + '%') + '</small></span>' +
+      '</div>';
+    return html;
   }
 
   function buildSongRankingHTML(song) {
@@ -646,7 +718,7 @@
       var details = e.accuracy + '%' + (e.combo ? ' · combo ' + e.combo : '') +
         (e.hand && e.hand !== 'both' ? ' · só ' + HAND_NAMES[e.hand] : '') +
         (e.wait ? ' · espera' : '') +
-        (e.speed && e.speed !== 1 ? ' · ' + Math.round(song.bpm * e.speed) + ' BPM' : '') +
+        ' · ' + entryBpm(song, e) + ' BPM' +
         (e.date ? ' · ' + new Date(e.date).toLocaleDateString('pt-BR') : '');
       return '<div class="setup-rank-row"><span class="setup-rank-pos">' + (MEDALS[i] || (i + 1) + 'º') + '</span>' +
         '<span class="setup-rank-info">' + details + '</span>' +
@@ -658,13 +730,13 @@
     if (!setupSong) return;
     state.waitMode = kind === 'wait';
     state.demoMode = kind === 'demo';
-    state.speed = setupSpeedValue || 1;
+    state.speed = setupBpmValue / setupSong.bpm;
     el.waitToggle.checked = state.waitMode;
     el.demoToggle.checked = state.demoMode;
-    el.speed.value = String(state.speed);
     progress.prefs.wait = state.waitMode;
     progress.prefs.demo = state.demoMode;
-    progress.prefs.speed = state.speed;
+    progress.prefs.bpm[setupSong.id] = setupBpmValue;
+    if (!el.setupHandSection.hidden) progress.prefs.hand = state.practiceHand;
     saveProgressState();
     startSong(setupSong);
   }
@@ -1011,13 +1083,18 @@
    * vídeo rebobinando, em vez de sumirem e reaparecerem no topo. Só o relógio recua:
    * `cursor`/`targetMidis` continuam na nota pendente, então notas de antes do ponto de
    * pausa não voltam a ser cobradas.
+   *
+   * No modo espera não há rebobinar nem 3-2-1: a nota pendente espera o jogador de
+   * qualquer jeito, então a música continua direto de onde está (no máximo, parada no
+   * começo da nota pendente — o updateSong() já segura o relógio ali).
    */
   function resumeGame() {
     if (!state.paused) return;
     state.paused = false;
     el.overlay.hidden = true;
     el.overlay.classList.remove('seeking');
-    if (state.mode === 'song' && state.cursor < state.timeline.length) {
+    var waiting = state.waitMode && !state.demoMode;
+    if (state.mode === 'song' && state.cursor < state.timeline.length && !waiting) {
       state.resolvedBars = [];
       state.rewind = { from: state.songTime, to: state.songTime - RESUME_COUNTDOWN, t: 0 };
     }
@@ -1066,26 +1143,59 @@
 
   /* ---------------- progresso e preferências (localStorage) ---------------- */
 
+  /**
+   * Tudo que fica salvo no navegador (localStorage): fases liberadas, ranking por fase,
+   * a última tentativa e os recordes de precisão/velocidade de cada fase, e as opções da
+   * última partida (cada uma salva assim que muda) — reabrir o jogo volta igual.
+   */
   function loadProgress() {
-    try {
-      var raw = localStorage.getItem(PROGRESS_KEY);
-      if (!raw) return { unlocked: 0, best: {}, scores: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
-      var p = JSON.parse(raw);
-      return {
-        unlocked: p.unlocked || 0,
-        best: p.best || {},
-        scores: p.scores || {},
-        prefs: {
-          speed: (p.prefs && p.prefs.speed) || 1,
-          effects: p.prefs && typeof p.prefs.effects === 'boolean' ? p.prefs.effects : true,
-          wait: p.prefs && typeof p.prefs.wait === 'boolean' ? p.prefs.wait : false,
-          metronome: p.prefs && typeof p.prefs.metronome === 'boolean' ? p.prefs.metronome : false,
-          mutePiano: p.prefs && typeof p.prefs.mutePiano === 'boolean' ? p.prefs.mutePiano : false,
-          demo: p.prefs && typeof p.prefs.demo === 'boolean' ? p.prefs.demo : false
-        }
-      };
-    } catch (e) {
-      return { unlocked: 0, best: {}, scores: {}, prefs: { speed: 1, effects: true, wait: false, metronome: false, mutePiano: false, demo: false } };
+    var p = {};
+    try { p = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}') || {}; } catch (e) { p = {}; }
+    var pr = p.prefs || {};
+    function bool(v, def) { return typeof v === 'boolean' ? v : def; }
+    var out = {
+      unlocked: p.unlocked || 0,
+      best: p.best || {},
+      scores: p.scores || {},
+      last: p.last || {},
+      records: p.records || {},
+      prefs: {
+        bpm: pr.bpm || {},   // BPM escolhido por fase (id → BPM)
+        effects: bool(pr.effects, true),
+        hint: bool(pr.hint, true),
+        wait: bool(pr.wait, false),
+        metronome: bool(pr.metronome, false),
+        mutePiano: bool(pr.mutePiano, false),
+        demo: bool(pr.demo, false),
+        hand: pr.hand === 'R' || pr.hand === 'L' ? pr.hand : 'both',
+        difficulty: pr.difficulty === 'scale' || pr.difficulty === 'all' ? pr.difficulty : 'white'
+      }
+    };
+    // Progresso de antes dos recordes separados: tira os recordes do ranking que já existia.
+    if (!p.records) {
+      Object.keys(out.best).forEach(function (id) {
+        (out.scores[id] || [out.best[id]]).forEach(function (e) { updateRecords(out.records, id, e); });
+      });
+    }
+    return out;
+  }
+
+  /** Atualiza os dois recordes da fase (precisão e velocidade) com uma tentativa nova. */
+  function updateRecords(records, songId, e) {
+    var rec = records[songId] || (records[songId] = {});
+    // Compara pelo multiplicador `speed` (BPM ÷ BPM da fase): dentro da mesma fase é o
+    // mesmo que comparar BPM, e as tentativas antigas (sem `bpm` salvo) também têm.
+    var spd = e.speed || 1;
+    var accBest = rec.accuracy;
+    if (!accBest || e.accuracy > accBest.accuracy ||
+        (e.accuracy === accBest.accuracy && spd > (accBest.speed || 1))) {
+      rec.accuracy = e;
+    }
+    var spdBest = rec.speed;
+    if (!e.wait && e.accuracy >= SPEED_RECORD_MIN_ACC &&
+        (!spdBest || spd > (spdBest.speed || 1) ||
+         (spd === (spdBest.speed || 1) && e.accuracy > spdBest.accuracy))) {
+      rec.speed = e;
     }
   }
 
@@ -1116,8 +1226,11 @@
   function saveProgress(songId, acc, score, combo) {
     var idx = songIndexOf(songId);
     var best = progress.best[songId];
+    var song = PH.songs[idx];
     var entry = { accuracy: acc, score: score, combo: combo, date: Date.now(), wait: state.waitMode,
-                  speed: state.speed, hand: state.practiceHand };
+                  speed: state.speed, bpm: song ? Math.round(song.bpm * state.speed) : 0, hand: state.practiceHand };
+    progress.last[songId] = entry;
+    updateRecords(progress.records, songId, entry);
     if (!best || score > best.score || (score === best.score && acc > best.accuracy)) {
       progress.best[songId] = entry;
     }
@@ -1181,17 +1294,15 @@
     if (changed) PH.render.relayout();
   }
 
-  /** O seletor de velocidade mostra BPM de verdade (calculado a partir do BPM da fase
-   *  atual), não a porcentagem crua — o valor interno (0.5..1.5, usado em beatSeconds())
-   *  continua sendo o multiplicador, só o texto exibido muda por música. */
-  var SPEED_MULTIPLIERS = [0.5, 0.75, 1, 1.25, 1.5];
+  /** O slider de velocidade do menu ⚙ mostra o BPM de verdade da fase atual (qualquer
+   *  inteiro entre bpmMin/bpmMax) — o valor interno usado em beatSeconds() continua sendo
+   *  o multiplicador `state.speed` (BPM escolhido ÷ BPM da fase). */
   function updateSpeedOptions() {
     if (!state.song) return;
-    var opts = el.speed.options;
-    for (var i = 0; i < opts.length && i < SPEED_MULTIPLIERS.length; i++) {
-      opts[i].textContent = Math.round(state.song.bpm * SPEED_MULTIPLIERS[i]) + ' BPM · ' +
-        speedPointsLabel(SPEED_MULTIPLIERS[i]);
-    }
+    el.speed.min = bpmMin(state.song);
+    el.speed.max = bpmMax(state.song);
+    el.speed.value = Math.round(state.song.bpm * state.speed);
+    el.speedOut.textContent = el.speed.value + ' BPM';
   }
 
   var pianoLoadWatched = false;
@@ -1751,7 +1862,7 @@
     state.hits++;
     state.combo++;
     state.bestCombo = Math.max(state.bestCombo, state.combo);
-    state.score += Math.round((perfect ? 15 : 10) * multiplier() * speedMultiplier());
+    state.score += Math.round((perfect ? 15 : 10) * multiplier());
 
     if (state.effects) PH.render.burst(played, true);
 
@@ -1770,9 +1881,15 @@
     state.running = false;
     var total = state.hits + state.misses;
     var acc = total ? Math.round(state.hits / total * 100) : 100;
-    var prevBest = progress.best[state.song.id];
+    var id = state.song.id;
+    var prevBest = progress.best[id];
     var isRecord = !prevBest || state.score > prevBest.score;
-    saveProgress(state.song.id, acc, state.score, state.bestCombo);
+    saveProgress(id, acc, state.score, state.bestCombo);
+    // Os dois recordes da fase: a tentativa que acabou de ser salva virou um deles?
+    var rec = progress.records[id] || {};
+    var recAcc = rec.accuracy === progress.last[id];
+    var recSpd = rec.speed === progress.last[id];
+    var bpm = Math.round(state.song.bpm * state.speed);
 
     var summary = summarizeLog();
     var hasNext = !!nextSong();
@@ -1781,8 +1898,14 @@
     el.completeStats.innerHTML =
       '<div class="stat"><span>Pontos</span><strong data-count="' + state.score + '">0</strong></div>' +
       '<div class="stat"><span>Precisão</span><strong data-count="' + acc + '" data-suffix="%">0%</strong></div>' +
+      '<div class="stat"><span>Velocidade</span><strong data-count="' + bpm + '" data-suffix=" BPM">0 BPM</strong></div>' +
       '<div class="stat"><span>Maior combo</span><strong data-count="' + state.bestCombo + '">0</strong></div>';
-    el.recordBadge.hidden = !isRecord || state.score === 0;
+    var recText = recAcc && recSpd ? 'Novo recorde de precisão e de velocidade!'
+      : recAcc ? 'Novo recorde de precisão!'
+      : recSpd ? 'Novo recorde de velocidade!'
+      : isRecord ? 'Novo recorde de pontos!' : '';
+    el.recordBadge.textContent = recText;
+    el.recordBadge.hidden = !recText || state.score === 0;
     el.completeHands.innerHTML = buildHandsHTML(summary);
     el.completeReport.innerHTML = buildReportHTML(summary, state.waitMode);
     // Resumo de uma linha sempre visível; o relatório completo (contagens, tendência de
@@ -1935,20 +2058,6 @@
 
   function multiplier() {
     return Math.min(1 + Math.floor(state.combo / 5), 5);
-  }
-
-  /**
-   * Bônus de velocidade (modo fase): tocar a música mais rápida vale mais pontos, mais lenta
-   * vale menos — a pontuação acompanha a dificuldade. É o próprio multiplicador de
-   * velocidade (0,5× a 1,5×), somado ao de combo. No modo livre não há BPM: sempre 1×.
-   */
-  function speedMultiplier() {
-    return state.mode === 'song' ? state.speed : 1;
-  }
-
-  /** Rótulo do bônus de pontos de uma velocidade, ex.: "pontos ×1,5". */
-  function speedPointsLabel(mult) {
-    return 'pontos ×' + String(mult).replace('.', ',');
   }
 
   function comboText() {

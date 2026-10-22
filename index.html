@@ -108,14 +108,8 @@
               </select>
             </div>
             <div id="speedItem" hidden>
-              <span class="options-row-label">Velocidade</span>
-              <select id="speed" title="Velocidade da música (fase), em BPM">
-                <option value="0.5">… BPM</option>
-                <option value="0.75">… BPM</option>
-                <option value="1" selected>… BPM</option>
-                <option value="1.25">… BPM</option>
-                <option value="1.5">… BPM</option>
-              </select>
+              <span class="options-row-label">Velocidade: <output id="speedOut">…</output></span>
+              <input type="range" id="speed" min="20" max="240" step="1" value="100" title="Velocidade da música (fase), em BPM">
             </div>
             <div id="waitItem" hidden>
               <label class="toggle">
@@ -191,6 +185,8 @@
           <button id="btnBackFromSong" type="button" class="icon-circle small ghost" aria-label="Voltar para as fases" title="Voltar para as fases"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
         </div>
         <p id="setupSubtitle"></p>
+        <!-- Pontuação de antes (última tentativa + recordes de precisão e de velocidade), vista antes de começar. -->
+        <div class="setup-last" id="setupLast" hidden></div>
         <!-- Organizada de cima pra baixo: escolhas (mão, velocidade) e, por último, os
              botões que começam a partida (um por modo). Ranking recolhido no fim. -->
         <div class="setup-section" id="setupHandSection">
@@ -204,7 +200,13 @@
         </div>
         <div class="setup-section">
           <span class="setup-label">Velocidade</span>
-          <div class="segmented speed-seg" id="setupSpeed" role="radiogroup" aria-label="Velocidade"></div>
+          <div class="bpm-picker">
+            <button type="button" class="bpm-step ghost" id="setupBpmMinus" aria-label="Mais devagar" title="Mais devagar">−</button>
+            <input type="range" id="setupBpm" min="20" max="240" step="1" value="100" aria-label="Velocidade em BPM">
+            <button type="button" class="bpm-step ghost" id="setupBpmPlus" aria-label="Mais rápido" title="Mais rápido">+</button>
+            <output class="bpm-out" id="setupBpmOut"><strong>100</strong> BPM</output>
+            <button type="button" class="bpm-reset ghost" id="setupBpmReset" title="Voltar ao BPM original">original</button>
+          </div>
         </div>
         <p class="setup-hint" id="setupListenHint" hidden>Música completa, com mais oitavas no teclado — para ouvir e tocar junto. Não conta pontos.</p>
         <div class="setup-modes">
