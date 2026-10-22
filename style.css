@@ -296,14 +296,6 @@ button.ghost:hover { color: var(--text); }
 
 .options-panel .toggle { color: var(--text); }
 
-.options-sep {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-}
-
 .options-row-label {
   font-size: 10.5px;
   font-weight: 600;
@@ -657,16 +649,6 @@ button.ghost:hover { color: var(--text); }
 .setup-text strong { font-size: 15px; }
 .setup-text small { font-size: 12px; opacity: .75; font-weight: 500; }
 
-.setup-speed {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin: 14px 0 6px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
 /* Seções de escolha (mão / velocidade) */
 .setup-section { margin: 0 0 12px; text-align: left; }
 .setup-label {
@@ -782,13 +764,6 @@ button.ghost:hover { color: var(--text); }
   padding: 28px 24px;
 }
 
-.icon-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-
 .icon-circle {
   width: 56px;
   height: 56px;
@@ -884,12 +859,6 @@ button.ghost:hover { color: var(--text); }
   font-weight: 600;
 }
 .level-info small { color: var(--muted); font-size: 12px; }
-
-.level-lock {
-  flex: 0 0 auto;
-  font-size: 14px;
-  color: var(--muted);
-}
 
 .level-score {
   flex: 0 0 auto;
@@ -1233,15 +1202,6 @@ button.ghost:hover { color: var(--text); }
 .song-setup > p { text-align: left; }
 .setup-ranking .ranking-empty { margin: 10px 0; font-size: 12.5px; }
 
-.setup-ranking-title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--muted-2);
-  margin-bottom: 6px;
-}
-
 .setup-rank-row {
   display: flex;
   align-items: center;
@@ -1348,7 +1308,6 @@ button.ghost:hover { color: var(--text); }
   html.compact .setup-mode { flex-direction: column; gap: 4px; padding: 10px 8px; text-align: center; }
   html.compact .setup-text { align-items: center; }
   html.compact .setup-text small { display: none; }
-  html.compact .setup-speed { margin: 10px 0 4px; }
 }
 
 /* O mapa não tem altura própria (as bolhas são posicionadas por cima), então precisa de
@@ -1362,7 +1321,6 @@ html.compact .home-card .level-map { height: auto; flex: 1 1 auto; min-height: 1
 /* Só no modo fase (body.song-mode, ver updateModeUI()): no topo (HUD) e na pausa. */
 .seek-btn { display: none; }
 body.song-mode .hud-controls .seek-btn { display: inline-block; font-weight: 700; }
-body.song-mode .icon-controls .seek-btn { display: grid; }
 
 /* Toque duplo rápido em botões/HUD não dá zoom (o canvas já tem touch-action: none). */
 html { touch-action: manipulation; }
@@ -1372,7 +1330,6 @@ html { touch-action: manipulation; }
    já estão na pausa (tocar na tela). */
 html.compact #scrubberItem { display: none !important; }
 html.compact #restart, html.compact #menuBtn { display: none; }
-html.compact .icon-controls { gap: 12px; }
 
 /* ---------- Barra de progresso lateral + arrastar a pista ---------- */
 

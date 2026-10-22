@@ -185,7 +185,6 @@ window.PianoHero = window.PianoHero || {};
   function labelFor(midi) { return LABELS[midi] || ''; }
 
   PH.input = {
-    KEY_MAP: KEY_MAP,
     labelFor: labelFor,
     initKeyboard: initKeyboard,
     initPointer: initPointer,

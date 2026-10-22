@@ -66,10 +66,6 @@ window.PianoHero = window.PianoHero || {};
     all: coreWhite.concat(coreBlack).sort(function (a, b) { return a - b; })
   };
 
-  function isBlack(midi) {
-    return [1, 3, 6, 8, 10].indexOf(midi % 12) !== -1;
-  }
-
   function noteName(midi) {
     return NAMES[((midi % 12) + 12) % 12];
   }
@@ -191,8 +187,6 @@ window.PianoHero = window.PianoHero || {};
     resetRange: resetRange,
     WHITE: WHITE,
     BLACK: BLACK,
-    POOLS: POOLS,
-    isBlack: isBlack,
     noteName: noteName,
     noteNameOct: noteNameOct,
     Sequence: Sequence
