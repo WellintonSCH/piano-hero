@@ -8,16 +8,15 @@ O sistema foi além do MVP descrito no `prompt.md` (que pedia só notas soltas, 
 
 ## 2. Arquitetura
 
-Oito módulos carregados por `<script>` em ordem de dependência, todos pendurados num único namespace global (`window.PianoHero`), comunicando a entrada por `CustomEvent`s no `window`:
+Sete módulos principais, carregados por `<script>` em ordem de dependência, todos pendurados num único namespace global (`window.PianoHero`), comunicando a entrada por `CustomEvent`s no `window`:
 
 ```
-latency.js → audio.js → notes.js → songs.js → fingering.js → render.js → input.js → main.js
+audio.js → notes.js → songs.js → fingering.js → render.js → input.js → main.js
 ```
 
 | Módulo | Responsabilidade | Destaques técnicos |
 |---|---|---|
 | `input.js` | Unifica 3 fontes de entrada | Web MIDI (`requestMIDIAccess`, parsing de note-on/off pelo status byte, descarte de note-on duplicado quando o piano aparece como duas portas), teclado (25 teclas → 2 oitavas, anti-repeat), ponteiro (mouse/touch multitoque por `pointerId`). Todas emitem os mesmos eventos `notePlayed`/`noteReleased`. |
-| `latency.js` | Instrumentação de latência | Mede entrada→som em 4 etapas (entrada→dispatch, dispatch→handler, handler→agendamento, agendamento→saída), usando `getOutputTimestamp()` + `outputLatency` para ligar o relógio do Web Audio ao `performance.now()`. Exporta JSON/CSV pelo painel "Medir latência". |
 | `audio.js` | Motor de áudio | 25 amostras reais (Dó3–Dó5) via `decodeAudioData`; sustain até soltar a tecla + release exponencial imitando o abafador; notas fora da faixa usam a amostra mais próxima com `playbackRate` (até 1 oitava) ou oscilador sintetizado. Barramento separado para o piano (permite silenciá-lo e tocar num instrumento externo). |
 | `notes.js` | Vocabulário musical | MIDI ↔ nome de nota, teclado desenhado de 5 oitavas (1 no celular), faixa ajustável por música, pools de dificuldade do modo livre. |
 | `songs.js` + `songs/*.json` | Repertório | 15 músicas embutidas + 6 importadas (JSON), timing em **ticks inteiros (PPQ 480)** como num arquivo MIDI. Músicas novas entram só soltando um JSON em `songs/` (gerado de MusicXML por `tools/mxl_to_song.py`), sem mexer no código. |
@@ -43,16 +42,15 @@ latency.js → audio.js → notes.js → songs.js → fingering.js → render.js
 - **Relatório pós-fase:** perfeitos/bons/erros, tendência de adiantar ou atrasar, notas mais erradas, acerto por mão.
 - **Celular:** modo paisagem em tela cheia, teclado de 1 oitava, músicas maiores como "tocar junto" (só demonstração).
 
-## 4. Avaliação (o que o TCC mede)
+## 4. Avaliação
 
-- **Latência entrada→som por fonte de entrada** (MIDI × teclado × toque), com o painel "Medir latência": tocar cerca de 30–50 notas em cada fonte, exportar o CSV e comparar a média e a dispersão de cada etapa.
 - **Precisão rítmica do jogador**, que o próprio jogo já calcula por partida (desvio médio em ms e tendência de adiantar/atrasar).
 - **Compatibilidade:** Chrome/Edge com Web MIDI; Safari/iOS sem Web MIDI (funciona por toque) — limitação do objeto de estudo, documentada no texto.
 
 ## 5. Limitações e trabalhos futuros
 
 - Sem testes automatizados (a validação foi manual no navegador).
-- O áudio é disparado de forma síncrona no evento de entrada; um agendamento antecipado (lookahead) poderia reduzir o jitter — a medir antes de complicar.
+- O áudio é disparado de forma síncrona no evento de entrada; um agendamento antecipado (lookahead) poderia deixar o tempo do som mais regular.
 - Web MIDI indisponível no Safari/iOS.
 - Dedilhado automático é uma sugestão heurística, não o de um editor de partituras.
 - Interface ainda pode ser simplificada com testes de usabilidade com usuários reais.
