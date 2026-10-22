@@ -20,6 +20,7 @@ window.PianoHero = window.PianoHero || {};
   Object.keys(KEY_MAP).forEach(function (ch) { LABELS[KEY_MAP[ch]] = ch.toUpperCase(); });
 
   var held = {};       // evita auto-repeat do teclado
+  var midiHeld = {};   // nota MIDI (crua) → segurada; descarta note-on duplicado (ver handleMessage)
   var midiAccess = null;
 
   /**
@@ -130,6 +131,7 @@ window.PianoHero = window.PianoHero || {};
       midiAccess = access;
       attachAll(access);
       access.onstatechange = function () {
+        midiHeld = {};   // aparelho conectado/desconectado: note-off pendente pode nunca chegar
         attachAll(access);
         report(access);
       };
@@ -164,9 +166,17 @@ window.PianoHero = window.PianoHero || {};
 
       // Note-on de verdade: comando 0x90 e velocity > 0
       // (velocity 0 em 0x90 costuma ser usado como note-off).
+      // Mesma tecla chegando de novo sem ter sido solta = cópia, não um toque novo: muitos
+      // pianos aparecem como duas portas MIDI (USB + Bluetooth, "MIDIIN2"...) e o jogo
+      // escuta todas. Sem isso, no modo espera a cópia "tocava" a mesma tecla na nota/
+      // acorde seguinte sem o jogador ter apertado de novo.
       if (cmd === 0x90 && velocity > 0) {
+        if (midiHeld[note]) return;
+        midiHeld[note] = true;
         emit(fold(note), 'midi', msg.timeStamp);
       } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
+        if (!midiHeld[note]) return;
+        delete midiHeld[note];
         emitRelease(fold(note), 'midi');
       }
     }
