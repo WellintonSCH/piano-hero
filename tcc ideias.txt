@@ -1,0 +1,45 @@
+preciso de uma maneira de deixar mais intuitivo
+
+
+bugs: quando ta no menu de esoclha de musicas quando roda o scroll ele ta 
+mechendo na parte da musica e não no scroll das fases.
+
+
+o botaão de pausa ta bugado, preciso que uando clique em qualquer lugar da tela 
+que nao seja na nota a pausa aoconteça
+
+
+
+
+1 - Maneira de eu compor e editar as musicas, como um arquivo json ou algo do tipo.
+
+
+
+
+a parte de repetir trecho para repetição quero integrada ao timeline da musica.
+
+
+
+Os menus estão confusos, preciso ajustar para que tudo fique mais acessivel.
+
+Quando pausar quero uma menira rapida de voltar a musica.
+
+
+
+
+Também quero uma funcionalidade para escolher qual mão praticar. Para dividir os treinos de 
+mais complexas.
+
+essa funcionalidade é muito importante e no proprio json da musica deve conter com qual1 dedo tocar
+
+sendo 1 dedão até o 5 por exemplo L1 lado esquerdo dedo 1 o dedão, mas so joga pra esquerda 
+quando a direita nao da conta
+
+é necessario uam funçaõ de praticar uam mão só, enquanto as notas da outra mão se toca sozinhas...
+
+relatoriuo de cada mão na pontuação
+
+
+as animações de relatorio e os menus devem ficar mais faceis de usar e melhor organizados
+
+
