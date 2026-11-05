@@ -198,13 +198,6 @@ window.PianoHero = window.PianoHero || {};
     } catch (e) { /* a fonte já pode ter terminado sozinha (amostra curta) */ }
   }
 
-  /** Toca e solta sozinha depois de `dur` segundos — pra feedback rápido sem hold real. */
-  function playNote(midi, volume, dur) {
-    startNote(midi, volume);
-    var d = dur === undefined ? 0.6 : dur;
-    setTimeout(function () { stopNote(midi, 0.3); }, d * 1000);
-  }
-
   /**
    * Relógio do Web Audio (segundos, mesma base de `startNote`/agendamento). É a única
    * base de tempo precisa o bastante pra agendar o metrônomo com antecedência (ver
@@ -266,7 +259,6 @@ window.PianoHero = window.PianoHero || {};
     onReady: onReady,
     startNote: startNote,
     stopNote: stopNote,
-    playNote: playNote,
     playTimeout: playTimeout,
     now: now,
     playClick: playClick,
