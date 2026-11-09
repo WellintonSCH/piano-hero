@@ -25,7 +25,7 @@ Ao escolher uma fase, o jogador vê as formas de jogar, o seletor de velocidade,
 | Demonstração | A música toca sozinha, e a entrada do jogador é ignorada | Não |
 | Livre | Fila de notas sem tempo, com três dificuldades: teclas brancas, escala de Dó e com sustenidos | Sim |
 
-No modo normal, a janela de acerto é de ±0,35 s, e o acerto perfeito fica em ±0,12 s. No modo espera, a nota é aceita a qualquer momento, sem bônus de perfeito.
+No modo normal, a janela de acerto é de ±0,25 s, e o acerto perfeito fica em ±0,08 s. Um toque adiantado só vale até a metade do intervalo desde a nota anterior, para não ser confundido com ela, e um toque logo depois de a nota expirar aparece como "Atrasou!" sem contar um erro a mais. No modo espera, a nota é aceita a qualquer momento, sem bônus de perfeito.
 
 ## Recursos de prática
 

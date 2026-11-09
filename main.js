@@ -20,8 +20,14 @@
   var PROGRESS_KEY = 'pianoHeroProgress';
 
   var LEAD_TIME = 2.0;       // segundos que uma nota leva caindo até a linha (modo fase)
-  var HIT_WINDOW = 0.35;     // tolerância total (±) pra considerar a nota "no tempo"
-  var PERFECT_WINDOW = 0.12; // dentro disso conta como acerto "perfeito" (mais pontos)
+  // Janela de acerto (modo normal). Era ±0,35 s / ±0,12 s: larga demais — um toque 200 ms
+  // atrasado ainda dava 100% de precisão, e com notas de 0,6 s um toque 450 ms atrasado virava
+  // acerto da nota seguinte (avaliação do TCC, casos CT11/CT12). Ainda tolerante p/ iniciante.
+  var HIT_WINDOW = 0.25;     // tolerância (±) pra considerar a nota "no tempo"
+  var PERFECT_WINDOW = 0.08; // dentro disso conta como acerto "perfeito" (mais pontos)
+  // Toque ADIANTADO só vale até a metade do intervalo desde a nota anterior: mais cedo que isso,
+  // ele está mais perto da nota anterior do que desta, então não pode ser creditado a esta.
+  var EARLY_FRACTION = 0.5;
   var PRE_ROLL = 3;          // segundos de preparo (contagem 3-2-1) antes do tempo 0 da música
   var RESUME_COUNTDOWN = 3;  // segundos de contagem regressiva ao continuar depois de uma pausa
   var REWIND_ANIM = 0.6;     // segundos (reais) da animação das notas voltando pra cima ao continuar
@@ -74,6 +80,8 @@
     misses: 0,
     running: false
   };
+  // Só com ?debug na URL: expõe o estado para os testes automatizados (relógio da música etc.).
+  if (/[?&]debug\b/.test(location.search)) PH.debugState = state;
 
   function boot() {
     el.canvas = document.getElementById('game');
@@ -1429,6 +1437,7 @@
     state.hits = 0;
     state.misses = 0;
     state.log = [];
+    state.lastExpired = null;
     sequence.last = null;
 
     if (state.mode === 'song' && state.song) {
@@ -1464,6 +1473,15 @@
 
     updateHUD();
     updateScrubber();
+    // Modo pesquisa (research.js): cada (re)início de fase é uma tentativa nova.
+    if (PH.research && state.mode === 'song' && state.song) {
+      PH.research.attemptStart({
+        songId: state.song.id, title: state.song.title,
+        mode: state.demoMode ? 'demonstracao' : state.waitMode ? 'espera' : 'normal',
+        hand: state.practiceHand, bpm: Math.round(state.song.bpm * state.speed),
+        notes: state.timeline.length
+      });
+    }
   }
 
   /* ---------------- modo livre: fila infinita, sem tempo ---------------- */
@@ -1646,6 +1664,9 @@
     var timeline = state.timeline;
     while (state.cursor < timeline.length && state.songTime > timeline[state.cursor].time + HIT_WINDOW) {
       var missed = timeline[state.cursor];
+      // Lembra o que expirou: um toque logo depois nessa mesma tecla é "atrasado", não um erro
+      // a mais (antes, a mesma nota contava duas vezes: perdida no tempo + nota errada).
+      state.lastExpired = { time: missed.time, pending: state.targetMidis.slice() };
       // Toda nota do acorde que ainda não foi tocada conta como perdida.
       state.targetMidis.forEach(function (midi) {
         state.misses++;
@@ -1811,7 +1832,7 @@
 
     var chord = timeline[state.cursor];
     var dt = state.songTime - chord.time;   // negativo = adiantado, positivo = atrasado
-    var onTime = state.waitMode || Math.abs(dt) <= HIT_WINDOW;
+    var onTime = state.waitMode || (dt <= HIT_WINDOW && -dt <= earlyWindow(timeline, state.cursor));
     var idx = state.targetMidis.indexOf(played);
 
     if (idx !== -1 && onTime) {
@@ -1829,6 +1850,12 @@
         state.cursor++;
         state.targetMidis = state.cursor < timeline.length ? timeline[state.cursor].midis.slice() : [];
       }
+    } else if (isLateForExpired(played)) {
+      // Tecla certa, mas a nota já tinha expirado: só avisa — o erro já foi contado no timeout.
+      state.log.push({ index: chord.index, expected: played, result: 'late',
+                       deltaMs: Math.round((state.songTime - state.lastExpired.time) * 1000), hand: null });
+      holdKey(played, false);
+      showFeedback('Atrasou!', 'bad');
     } else {
       state.misses++;
       state.combo = 0;
@@ -1841,6 +1868,23 @@
 
     updateHUD();
     checkSongEnd();
+  }
+
+  /** O toque é a nota que acabou de expirar (até 2 janelas depois do tempo dela)? Consome a nota. */
+  function isLateForExpired(played) {
+    var le = state.lastExpired;
+    if (state.waitMode || !le) return false;
+    var k = le.pending.indexOf(played);
+    if (k === -1 || state.songTime - le.time > 2 * HIT_WINDOW) return false;
+    le.pending.splice(k, 1);
+    return true;
+  }
+
+  /** Quanto antes do tempo um toque ainda vale para a posição `i` (ver EARLY_FRACTION). */
+  function earlyWindow(timeline, i) {
+    if (i <= 0) return HIT_WINDOW;
+    var gap = timeline[i].time - timeline[i - 1].time;
+    return Math.min(HIT_WINDOW, gap * EARLY_FRACTION);
   }
 
   /** Mão da nota `midi` na posição `slot` da timeline ('R' / 'L'). */
@@ -1893,6 +1937,14 @@
 
     var summary = summarizeLog();
     var hasNext = !!nextSong();
+    if (PH.research) {
+      PH.research.attemptEnd({
+        accuracy: acc, score: state.score, bestCombo: state.bestCombo,
+        perfect: summary.perfect, good: summary.good, wrong: summary.wrong, timeout: summary.timeout, late: summary.late,
+        meanDeltaMs: summary.deltas.length ? Math.round(summary.avgDelta) : null,
+        meanAbsDeltaMs: summary.deltas.length ? Math.round(summary.deltas.reduce(function (a, b) { return a + Math.abs(b); }, 0) / summary.deltas.length) : null
+      });
+    }
 
     el.completeTitle.textContent = '🎉 ' + state.song.title + ' completa!';
     el.completeStats.innerHTML =
@@ -1969,7 +2021,7 @@
   /* ---------------- relatório de performance ---------------- */
 
   function summarizeLog() {
-    var perfect = 0, good = 0, wrong = 0, timeout = 0;
+    var perfect = 0, good = 0, wrong = 0, timeout = 0, late = 0;
     var deltas = [];
     var missCount = {};
     var byHand = { R: { hits: 0, total: 0 }, L: { hits: 0, total: 0 } };
@@ -1983,6 +2035,7 @@
       else if (e.result === 'good') { good++; if (e.deltaMs != null) deltas.push(e.deltaMs); }
       else if (e.result === 'wrong') { wrong++; tallyMiss(e.expected); }
       else if (e.result === 'timeout') { timeout++; tallyMiss(e.expected); }
+      else if (e.result === 'late') late++;
     });
 
     function tallyMiss(midi) {
@@ -1997,7 +2050,7 @@
       .sort(function (a, b) { return b.count - a.count; })
       .slice(0, 4);
 
-    return { perfect: perfect, good: good, wrong: wrong, timeout: timeout, avgDelta: avgDelta, worst: worst, byHand: byHand };
+    return { perfect: perfect, good: good, wrong: wrong, timeout: timeout, avgDelta: avgDelta, worst: worst, byHand: byHand, deltas: deltas, late: late };
   }
 
   function buildReportHTML(s, waitMode) {
@@ -2005,7 +2058,8 @@
       '<span class="chip perfect">Perfeitas: ' + s.perfect + '</span>' +
       '<span class="chip good">Boas: ' + s.good + '</span>' +
       '<span class="chip wrong">Notas erradas: ' + s.wrong + '</span>' +
-      '<span class="chip timeout">Perdidas no tempo: ' + s.timeout + '</span>';
+      '<span class="chip timeout">Perdidas no tempo: ' + s.timeout + '</span>' +
+      (s.late ? '<span class="chip timeout">Tocadas atrasadas: ' + s.late + '</span>' : '');
 
     var tendency;
     if (waitMode) {

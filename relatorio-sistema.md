@@ -22,7 +22,7 @@ audio.js → notes.js → songs.js → fingering.js → render.js → input.js �
 | `songs.js` + `songs/*.json` | Repertório | 15 músicas embutidas + 6 importadas (JSON), timing em **ticks inteiros (PPQ 480)** como num arquivo MIDI. Músicas novas entram só soltando um JSON em `songs/` (gerado de MusicXML por `tools/mxl_to_song.py`), sem mexer no código. |
 | `fingering.js` | Mão e dedo de cada nota | Lê o dedilhado do JSON (`R1`..`R5`, `L1`..`L5`) ou sugere um automaticamente (mão direita por padrão, esquerda só quando a direita não alcança; dedos por "posição" da frase). Mesmo código roda no navegador e no Node. |
 | `render.js` | Renderização | Canvas 2D ciente de DPI, geometria do teclado calculada, barras com comprimento proporcional à duração, partículas de acerto, ajuste à altura real da tela no celular. |
-| `main.js` | Estado e orquestração | Modos livre e fase, loop `requestAnimationFrame` com `dt` limitado (efeitos) e `rawDt` sem limite (relógio musical), pontuação por janela de acerto (±0,35 s; perfeito ±0,12 s), pausa/retomada com contagem 3-2-1, persistência em `localStorage`, relatório pós-fase. |
+| `main.js` | Estado e orquestração | Modos livre e fase, loop `requestAnimationFrame` com `dt` limitado (efeitos) e `rawDt` sem limite (relógio musical), pontuação por janela de acerto (±0,25 s, adiantado no máximo metade do intervalo desde a nota anterior; perfeito ±0,08 s), pausa/retomada com contagem 3-2-1, persistência em `localStorage`, relatório pós-fase. |
 
 **Decisões de arquitetura defensáveis na monografia:**
 - **Zero dependências e zero build** — só arquivos estáticos servidos por HTTP.

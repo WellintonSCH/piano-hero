@@ -1615,3 +1615,29 @@ body.song-mode .hud-controls .seek-btn.hud-icon { display: inline-flex; padding:
    e voltam ao parar de mexer — ver markSeeking() no main.js. */
 .player-controls { transition: opacity .2s ease; }
 #overlay.seeking .player-controls { opacity: 0; pointer-events: none; }
+
+/* ---------------- modo pesquisa (research.js, só com ?pesquisa=Pxx na URL) ---------------- */
+.research { position: fixed; left: 8px; bottom: 8px; z-index: 60; font: 13px/1.4 system-ui, sans-serif; }
+.research-badge {
+  padding: 3px 9px; border-radius: 999px; cursor: pointer;
+  background: var(--panel-2); color: var(--accent);
+  border: 1px solid var(--accent-2);
+  font: 600 11px/1.4 system-ui, sans-serif; letter-spacing: .02em; opacity: .85;
+}
+.research-badge:hover, .research-badge[aria-expanded="true"] { opacity: 1; }
+.research-panel {
+  position: absolute; left: 0; bottom: calc(100% + 6px); width: 250px;
+  display: flex; flex-direction: column; gap: 8px; padding: 12px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--radius-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+}
+.research-panel[hidden] { display: none; }
+.research-count { color: var(--muted); font-size: 12px; }
+.research-actions, .research-next { display: flex; gap: 6px; }
+.research-actions button { flex: 1; }
+.research-next input {
+  flex: 1; min-width: 0; padding: 5px 8px; border-radius: var(--radius-sm);
+  border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit;
+}
+.research-clear { font-size: 12px; }

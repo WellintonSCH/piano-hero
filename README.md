@@ -39,9 +39,23 @@ python -m http.server 8000
 
 Depois abra `http://localhost:8000`.
 
+## Modo pesquisa (testes com participantes)
+
+Abra o jogo com `?pesquisa=` e um código de participante, por exemplo `http://localhost:8000/?pesquisa=P01`. Um selo "Pesquisa · P01" aparece no canto inferior esquerdo. Com ele ativo:
+
+- cada vez que uma fase começa ou recomeça, o jogo registra uma tentativa: fase, modo, andamento, precisão, acertos, erros, atraso médio e quantas notas vieram do piano MIDI, do teclado e do mouse ou toque. Tentativas interrompidas ficam como "abandonada";
+- ao trocar de participante (clique no selo, digite o próximo código e clique em Trocar), o progresso do jogo é zerado, mas o registro da pesquisa continua;
+- o selo também exporta o registro em CSV ou JSON.
+
+Os dados ficam só no navegador (`localStorage`) até serem exportados. Não use janela anônima. Sem `?pesquisa=` na URL, nada disso é ativado.
+
+## Testes automatizados
+
+Os testes da avaliação técnica do TCC estão em [`tools/testes/`](tools/testes/README.md): casos de teste funcionais, latência, janela de acerto e desempenho de renderização, rodados no Chrome com um piano MIDI virtual.
+
 ## Compatibilidade
 
-O jogo funciona por teclado e toque em navegadores modernos. O piano MIDI depende do suporte do navegador à Web MIDI API: Chrome e Edge oferecem suporte, e o Safari, incluindo o iOS, não oferece. Uma matriz de testes formal ainda não foi feita.
+O jogo funciona por teclado e toque em navegadores modernos. O piano MIDI depende do suporte do navegador à Web MIDI API: Chrome e Edge oferecem suporte; o Firefox oferece mediante um complemento de permissão por site; e o Safari, incluindo o iOS, não oferece. Uma matriz de testes formal ainda não foi feita.
 
 ## Tecnologias
 
