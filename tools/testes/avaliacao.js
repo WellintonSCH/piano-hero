@@ -28,7 +28,7 @@ async function completeText(p) {
   return null;
 }
 async function openSong(p, idx) {
-  const b = await p.$$('.map-bubble'); await b[idx].click(); await sleep(700);
+  const b = await p.$$('.map-bubble:not(.intro)'); await b[idx].click(); await sleep(700);
 }
 
 (async () => {

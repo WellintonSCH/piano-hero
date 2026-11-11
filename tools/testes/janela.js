@@ -12,7 +12,7 @@ const MIDI_MOCK = () => { const port = { name: 'Piano virtual', onmidimessage: n
     const p = await b.newPage(); await p.setViewport({ width: 1280, height: 860 });
     await p.evaluateOnNewDocument(MIDI_MOCK);
     await p.goto('http://localhost:8765/?debug&pesquisa=JANELA', { waitUntil: 'networkidle0' }); await sleep(1000);
-    const ids = await p.evaluate(() => PianoHero.songs.map(s => s.id)); const bs = await p.$$('.map-bubble'); await bs[ids.indexOf('twinkle')].click(); await sleep(600);
+    const ids = await p.evaluate(() => PianoHero.songs.map(s => s.id)); const bs = await p.$$('.map-bubble:not(.intro)'); await bs[ids.indexOf('twinkle')].click(); await sleep(600);
     await p.click('#btnPlayNormal');
     await p.evaluate(off => new Promise(done => {
       const st = PianoHero.debugState; const tl = st.timeline.map(x => ({ t: x.time + off / 1000, m: x.midis.slice() })); let i = 0;

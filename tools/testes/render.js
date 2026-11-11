@@ -9,7 +9,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const p = await b.newPage(); await p.setViewport({ width: 1280, height: 860 });
     await p.goto('http://localhost:8765/', { waitUntil: 'networkidle0' }); await sleep(1200);
     const ids = await p.evaluate(() => PianoHero.songs.map(s => s.id));
-    const bs = await p.$$('.map-bubble'); await bs[ids.indexOf('bumblebee')].click(); await sleep(700);
+    const bs = await p.$$('.map-bubble:not(.intro)'); await bs[ids.indexOf('bumblebee')].click(); await sleep(700);
     await p.click('#btnPlayDemo'); await sleep(4000);
     const cdp = await p.target().createCDPSession(); await cdp.send('Emulation.setCPUThrottlingRate', { rate: thr });
     out['x' + thr] = await p.evaluate(() => new Promise(r => {

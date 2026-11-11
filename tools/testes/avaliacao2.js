@@ -45,7 +45,7 @@ async function completeText(p, tries = 80) {
 async function openSong(p, id) {
   const idx = await p.evaluate(id => [...document.querySelectorAll('.map-bubble')].findIndex(b => b.textContent && b.dataset && (b.dataset.song === id || b.dataset.id === id)), id);
   const ids = await p.evaluate(() => PianoHero.songs.map(s => s.id));
-  const bs = await p.$$('.map-bubble');
+  const bs = await p.$$('.map-bubble:not(.intro)');
   await bs[idx >= 0 ? idx : ids.indexOf(id)].click(); await sleep(700);
 }
 const songData = (p, id) => p.evaluate(id => { const s = PianoHero.songs.find(x => x.id === id);
