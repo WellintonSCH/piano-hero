@@ -389,6 +389,14 @@ window.PianoHero = window.PianoHero || {};
 
       function hintRing(key) {
         ctx.save();
+        // Primeiros passos: o iniciante precisa achar a tecla de longe — além do contorno,
+        // a tecla inteira fica azulada e pulsa de leve.
+        if (st.lesson) {
+          var pulse = 0.28 + 0.14 * Math.sin(Date.now() / 220);
+          ctx.fillStyle = 'rgba(111,155,255,' + pulse.toFixed(3) + ')';
+          roundRect(key.x + 2, key.y + 2, key.w - 4, key.h - 4, 6);
+          ctx.fill();
+        }
         ctx.strokeStyle = 'rgba(122,162,255,.95)';
         ctx.lineWidth = 3;
         ctx.setLineDash([6, 5]);

@@ -61,6 +61,7 @@
       a.erradas = data.wrong;
       a.perdidas = data.timeout;
       a.atrasadas = data.late;
+      if (data.stepTimes) a.tempos_passos_s = data.stepTimes.join(' | ');
       a.desvio_medio_ms = data.meanDeltaMs;
       a.desvio_abs_medio_ms = data.meanAbsDeltaMs;
     }
@@ -94,7 +95,7 @@
 
   var COLUMNS = ['participante', 'inicio', 'fim', 'duracao_s', 'status', 'fase', 'titulo', 'modo', 'mao',
     'bpm', 'notas', 'precisao', 'pontos', 'maior_combo', 'perfeitas', 'boas', 'erradas', 'perdidas', 'atrasadas',
-    'desvio_medio_ms', 'desvio_abs_medio_ms', 'notas_midi', 'notas_teclado', 'notas_mouse_toque'];
+    'desvio_medio_ms', 'desvio_abs_medio_ms', 'notas_midi', 'notas_teclado', 'notas_mouse_toque', 'tempos_passos_s'];
 
   function csvCell(v) {
     if (v == null) return '';

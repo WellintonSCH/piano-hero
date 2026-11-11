@@ -144,6 +144,13 @@
     el.screenHelp = document.getElementById('screen-help');
     el.screenRanking = document.getElementById('screen-ranking');
     el.screenComplete = document.getElementById('screen-complete');
+    el.screenIntro = document.getElementById('screen-intro');
+    el.introStats = document.getElementById('introStats');
+    el.lessonBanner = document.getElementById('lessonBanner');
+    el.lessonStep = document.getElementById('lessonStep');
+    el.lessonTitle = document.getElementById('lessonTitle');
+    el.lessonText = document.getElementById('lessonText');
+    el.lessonTip = document.getElementById('lessonTip');
     el.screenPause = document.getElementById('screen-pause');
     el.screenSong = document.getElementById('screen-song');
     el.setupTitle = document.getElementById('setupTitle');
@@ -207,6 +214,12 @@
     window.addEventListener('noteReleased', function (e) { onNoteReleased(e.detail); });
 
     document.getElementById('btnFree').addEventListener('click', startFree);
+    document.getElementById('btnIntroFirstSong').addEventListener('click', function () {
+      var first = availableSongs()[0];
+      if (first) showSongSetup(first);
+    });
+    document.getElementById('btnIntroRepeat').addEventListener('click', startLesson);
+    document.getElementById('btnIntroToLevels').addEventListener('click', showHome);
     document.getElementById('btnHelp').addEventListener('click', function () { showScreen('help'); });
     initFullscreen();
     document.getElementById('btnBackHomeFromHelp').addEventListener('click', showHome);
@@ -466,6 +479,7 @@
     el.screenSong.hidden = name !== 'song';
     el.screenRanking.hidden = name !== 'ranking';
     el.screenComplete.hidden = name !== 'complete';
+    el.screenIntro.hidden = name !== 'intro';
     el.screenPause.hidden = name !== 'pause';
     el.overlay.hidden = false;
     // Pausa "de vídeo": fundo quase transparente, dá pra ver as notas paradas no palco
@@ -482,6 +496,7 @@
 
   /** A tela inicial é a própria lista de fases — sempre re-renderizada (melhor % pode ter mudado). */
   function showHome() {
+    exitLesson();
     showScreen('home');
     renderLevelList();
   }
@@ -553,6 +568,17 @@
     var current = -1;
     var songs = availableSongs();
     var html = '<svg class="map-path" aria-hidden="true"><path/></svg>';
+    // Primeiros passos: antes da fase 1; enquanto não for feita, é ela a "fase atual".
+    var introDone = !!(progress.intro && progress.intro.done);
+    html += '<div class="map-node"><div class="map-stop" style="--k:' + MAP_K[MAP_K.length - 1] + '">' +
+      '<button type="button" class="map-bubble intro' + (introDone ? ' done' : ' current') + '" data-intro="1"' +
+      ' aria-label="Primeiros passos: conhecer o teclado">' +
+      '<span class="map-num">0</span>' +
+      (introDone ? '<span class="map-best">' + progress.intro.accuracy + '%</span>' : '') +
+      '</button>' +
+      '<span class="map-label">Primeiros passos</span>' +
+      '</div></div>';
+    if (!introDone) current = -2;   // nenhuma música fica marcada como atual antes da introdução
     for (var i = 0; i < songs.length; i++) {
       var song = songs[i];
       var best = progress.best[song.id];
@@ -572,7 +598,7 @@
 
     var bubbles = el.levelList.querySelectorAll('.map-bubble');
     for (var j = 0; j < bubbles.length; j++) {
-      bubbles[j].addEventListener('click', onLevelClick);
+      bubbles[j].addEventListener('click', bubbles[j].hasAttribute('data-intro') ? startLesson : onLevelClick);
     }
     drawMapPath();
     var cur = el.levelList.querySelector('.map-bubble.current');
@@ -1167,6 +1193,7 @@
       scores: p.scores || {},
       last: p.last || {},
       records: p.records || {},
+      intro: p.intro || null,   // introdução "Primeiros passos" concluída?
       prefs: {
         bpm: pr.bpm || {},   // BPM escolhido por fase (id → BPM)
         effects: bool(pr.effects, true),
@@ -1255,6 +1282,7 @@
   /* ---------------- início de modo ---------------- */
 
   function startFree() {
+    exitLesson();
     state.mode = 'free';
     state.song = null;
     setKeyboardFor(null);
@@ -1268,6 +1296,7 @@
   }
 
   function startSong(song) {
+    exitLesson();
     state.mode = 'song';
     state.song = song;
     setKeyboardFor(song);
@@ -1465,6 +1494,9 @@
       state.notes = [];
       state.targetMidis = state.timeline.length ? state.timeline[0].midis.slice() : [];
       showFeedback('', null);
+    } else if (state.lesson) {
+      showFeedback('', null);
+      initLesson();   // recomeçar durante a introdução = volta ao passo 1
     } else {
       state.notes = [];
       fill();
@@ -1488,14 +1520,17 @@
 
   function fill() {
     var layout = PH.render.getLayout();
+    var src = state.lesson ? lessonSource : sequence;
     while (state.notes.length < VISIBLE_NOTES) {
-      var midi = sequence.next();
+      var midi = src.next();
+      if (midi == null) break;
       var last = state.notes[state.notes.length - 1];
       var y = last ? Math.min(last.y - layout.spacing, -layout.noteH)
                    : -layout.noteH;
       state.notes.push({ midi: midi, y: y });
     }
     state.targetMidis = state.notes.length ? [state.notes[0].midi] : [];
+    if (state.lesson) lessonSyncTarget();
   }
 
   function updateFree(dt) {
@@ -1514,6 +1549,7 @@
   }
 
   function onFreeNote(played) {
+    if (state.lesson) { onLessonNote(played); return; }
     var target = state.targetMidis[0];
     holdKey(played, played === target);
 
@@ -1530,6 +1566,205 @@
       showFeedback('Era ' + PH.notes.noteNameOct(target) + '!', 'bad');
     }
     updateHUD();
+  }
+
+  /* ---------------- primeiros passos: introdução guiada ao teclado ---------------- */
+
+  /*
+   * Antes da primeira música: localizar as notas no teclado, sem tempo nem partitura.
+   * Usa a mecânica do modo livre (notas empilhadas, sem relógio), mas com uma sequência
+   * fixa por passo, um texto de instrução no palco e aceitando a nota em QUALQUER oitava
+   * (o iniciante ainda não sabe qual Dó é qual). No último passo a luz de ajuda some e só
+   * volta depois de dois erros na mesma nota.
+   */
+  var LESSON_STEPS = [
+    { title: 'As teclas pretas',
+      text: 'As teclas pretas vêm em grupos de 2 e de 3, e esse desenho se repete pelo teclado todo. O Dó é a tecla branca logo à esquerda do grupo de 2 pretas. Toque um Dó, qualquer um.',
+      notes: [60, 60, 60], hint: true, allOctaves: true },
+    { title: 'Todos os Dós',
+      text: 'Agora sem a luz de ajuda: ache o Dó sozinho, pelo grupo de 2 pretas. Se conseguir, toque Dós em lugares diferentes do teclado.',
+      notes: [60, 60, 60, 60], hint: false },
+    { title: 'Dó, Ré, Mi',
+      text: 'O Ré fica entre as 2 pretas, e o Mi, logo à direita delas. Suba e desça: Dó, Ré, Mi.',
+      notes: [60, 62, 64, 62, 60, 62, 64, 64], hint: true },
+    { title: 'Fá e Sol',
+      text: 'O Fá fica logo à esquerda do grupo de 3 pretas, e o Sol vem em seguida. Com o polegar no Dó, cada dedo fica numa tecla: Dó, Ré, Mi, Fá, Sol.',
+      notes: [60, 62, 64, 65, 67, 65, 64, 62, 60], hint: true },
+    { title: 'Desafio',
+      text: 'Sem luz e fora de ordem: Dó, Ré, Mi, Fá e Sol misturados. Se errar duas vezes a mesma nota, a tecla acende.',
+      random: { pool: [60, 62, 64, 65, 67], count: 10 }, hint: false }
+  ];
+  var LESSON_TIPS = {
+    0: 'O Dó é a tecla branca logo à esquerda do grupo de 2 pretas.',
+    2: 'O Ré é a tecla branca entre as 2 pretas.',
+    4: 'O Mi é a tecla branca logo à direita do grupo de 2 pretas.',
+    5: 'O Fá é a tecla branca logo à esquerda do grupo de 3 pretas.',
+    7: 'O Sol é a tecla branca entre a 1ª e a 2ª das 3 pretas.',
+    9: 'O Lá é a tecla branca entre a 2ª e a 3ª das 3 pretas.',
+    11: 'O Si é a tecla branca logo à direita do grupo de 3 pretas.'
+  };
+  var LESSON_PAUSE_MS = 1300;   // "Muito bem!" entre um passo e o próximo
+
+  function pitchClass(m) { return ((m % 12) + 12) % 12; }
+
+  /** Fonte de notas do passo atual para fill() (null = o passo não tem mais notas). */
+  var lessonSource = {
+    next: function () {
+      var L = state.lesson;
+      return L && L.queue.length ? L.queue.shift() : null;
+    }
+  };
+
+  function startLesson() {
+    exitLesson();
+    state.mode = 'free';
+    state.song = null;
+    setKeyboardFor(null);
+    PH.audio.unlock();
+    watchPianoLoad();
+    updateModeUI();
+    state.lesson = { savedHint: state.hint, gen: 0, queue: [] };
+    reset();   // reset() vê state.lesson e chama initLesson()
+    el.overlay.hidden = true;
+    state.running = true;
+  }
+
+  function initLesson() {
+    var L = state.lesson;
+    L.gen++;
+    L.step = 0;
+    L.hits = 0;
+    L.misses = 0;
+    L.stepTimes = [];
+    L.t0 = performance.now();
+    L.transition = false;
+    if (PH.research) {
+      var total = LESSON_STEPS.reduce(function (n, s) { return n + (s.random ? s.random.count : s.notes.length); }, 0);
+      PH.research.attemptStart({ songId: 'introducao', title: 'Primeiros passos', mode: 'introducao',
+                                 hand: 'both', bpm: null, notes: total });
+    }
+    loadLessonStep();
+  }
+
+  function loadLessonStep() {
+    var L = state.lesson, step = LESSON_STEPS[L.step];
+    if (step.random) {
+      L.queue = [];
+      var last = null;
+      for (var i = 0; i < step.random.count; i++) {
+        var m;
+        do { m = step.random.pool[Math.floor(Math.random() * step.random.pool.length)]; } while (m === last);
+        L.queue.push(m);
+        last = m;
+      }
+    } else {
+      L.queue = step.notes.slice();
+    }
+    L.errorsHere = 0;
+    L.stepStart = performance.now();
+    L.transition = false;
+    L.tip = '';
+    state.hint = step.hint;
+    state.notes = [];
+    state.resolvedBars = [];
+    fill();
+    renderLessonBanner();
+  }
+
+  /** Alvo(s) do passo: a nota da vez; no 1º passo, todas as teclas daquela nota acendem. */
+  function lessonSyncTarget() {
+    var L = state.lesson;
+    if (!state.notes.length) { state.targetMidis = []; return; }
+    var t = state.notes[0].midi, step = LESSON_STEPS[L.step];
+    if (!step.allOctaves) { state.targetMidis = [t]; return; }
+    var out = [];
+    for (var m = PH.notes.MIN_MIDI; m <= PH.notes.MAX_MIDI; m++) if (pitchClass(m) === pitchClass(t)) out.push(m);
+    state.targetMidis = out.length ? out : [t];
+  }
+
+  function onLessonNote(played) {
+    var L = state.lesson;
+    if (L.transition || !state.notes.length) return;
+    var target = state.notes[0].midi;
+    var ok = pitchClass(played) === pitchClass(target);   // qualquer oitava vale
+    holdKey(played, ok);
+
+    if (ok) {
+      L.hits++;
+      L.errorsHere = 0;
+      L.tip = '';
+      state.hint = LESSON_STEPS[L.step].hint;
+      registerHit(played, false);
+      state.resolvedBars.push({ midi: state.notes[0].midi, y: state.notes[0].y, len: PH.render.getLayout().noteH, t: 1 });
+      state.notes.shift();
+      fill();
+      if (!state.notes.length) completeLessonStep();
+    } else {
+      L.misses++;
+      L.errorsHere++;
+      state.misses++;
+      state.combo = 0;
+      if (L.errorsHere >= 2) state.hint = true;   // duas erradas seguidas: a tecla certa acende
+      if (state.effects) PH.render.burst(played, false);
+      L.tip = 'Essa é ' + PH.notes.noteName(played) + '. ' + (LESSON_TIPS[pitchClass(target)] || '');
+      showFeedback('Era ' + PH.notes.noteName(target) + '!', 'bad');
+    }
+    renderLessonBanner();
+    updateHUD();
+  }
+
+  function completeLessonStep() {
+    var L = state.lesson, gen = L.gen;
+    L.stepTimes.push(Math.round((performance.now() - L.stepStart) / 100) / 10);
+    L.step++;
+    if (L.step >= LESSON_STEPS.length) { finishLesson(); return; }
+    L.transition = true;
+    renderLessonBanner('Muito bem!');
+    setTimeout(function () {
+      if (state.lesson === L && L.gen === gen && L.transition) loadLessonStep();
+    }, LESSON_PAUSE_MS);
+  }
+
+  function finishLesson() {
+    var L = state.lesson;
+    var total = L.hits + L.misses;
+    var acc = total ? Math.round(L.hits / total * 100) : 100;
+    var secs = Math.round((performance.now() - L.t0) / 1000);
+    state.running = false;
+    progress.intro = { done: true, accuracy: acc, date: Date.now() };
+    saveProgressState();
+    if (PH.research) {
+      PH.research.attemptEnd({ accuracy: acc, score: state.score, bestCombo: state.bestCombo,
+        perfect: 0, good: L.hits, wrong: L.misses, timeout: 0, late: 0,
+        meanDeltaMs: null, meanAbsDeltaMs: null, stepTimes: L.stepTimes });
+    }
+    el.introStats.innerHTML =
+      '<div class="stat"><span>Acertos</span><strong>' + L.hits + '</strong></div>' +
+      '<div class="stat"><span>Erros</span><strong>' + L.misses + '</strong></div>' +
+      '<div class="stat"><span>Precisão</span><strong>' + acc + '%</strong></div>' +
+      '<div class="stat"><span>Tempo</span><strong>' + formatTime(secs) + '</strong></div>';
+    exitLesson();
+    showScreen('intro');
+  }
+
+  /** Sai da introdução (fim, menu, outra fase): devolve a preferência de dica e some o texto. */
+  function exitLesson() {
+    if (state.lesson) state.hint = state.lesson.savedHint;
+    state.lesson = null;
+    if (el.lessonBanner) el.lessonBanner.hidden = true;
+  }
+
+  function renderLessonBanner(done) {
+    var L = state.lesson;
+    if (!L) { el.lessonBanner.hidden = true; return; }
+    var step = LESSON_STEPS[L.step];
+    el.lessonBanner.hidden = false;
+    el.lessonBanner.classList.toggle('done', !!done);
+    el.lessonStep.textContent = done ? '' : 'Passo ' + (L.step + 1) + ' de ' + LESSON_STEPS.length;
+    el.lessonTitle.textContent = done || step.title;
+    el.lessonText.textContent = done ? '' : step.text;
+    el.lessonTip.textContent = done ? '' : (L.tip || '');
+    el.lessonTip.hidden = done || !L.tip;
   }
 
   /* ---------------- modo fase: linha do tempo com BPM/ticks ---------------- */

@@ -150,6 +150,13 @@
 
   <div id="stage">
     <canvas id="game"></canvas>
+    <!-- Primeiros passos: instrução do passo atual, por cima da pista de notas. -->
+    <div id="lessonBanner" class="lesson-banner" hidden aria-live="polite">
+      <span id="lessonStep" class="lesson-step"></span>
+      <strong id="lessonTitle" class="lesson-title"></strong>
+      <p id="lessonText" class="lesson-text"></p>
+      <p id="lessonTip" class="lesson-tip" hidden></p>
+    </div>
     <!-- Contagem 3-2-1: no começo da fase e ao continuar depois de uma pausa. -->
     <div id="countdown" class="countdown" hidden aria-live="polite"></div>
     <!-- Barra de progresso lateral (modo fase): começo embaixo, fim em cima, na altura da
@@ -267,6 +274,17 @@
           <button id="btnResume" type="button" class="pc-btn pc-play" aria-label="Continuar" title="Continuar"><svg class="ico" viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5a.8.8 0 0 0-1.2.7z" fill="currentColor" stroke="none"/></svg></button>
           <button id="btnSeekFwdPause" type="button" class="pc-btn seek-btn" aria-label="Avançar 5 segundos" title="Avançar 5 segundos"><svg class="ico" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 3.5v4h-4"/><text x="11.7" y="15.6" text-anchor="middle" font-size="8" font-weight="800" fill="currentColor" stroke="none" font-family="system-ui,sans-serif">5</text></svg></button>
           <button id="btnRestartFromPause" type="button" class="pc-btn pc-small" aria-label="Recomeçar a fase" title="Recomeçar a fase"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14"/><path d="M18 6.2v11.6a.7.7 0 0 1-1.1.6L9 12.6a.7.7 0 0 1 0-1.2l7.9-5.8a.7.7 0 0 1 1.1.6z" fill="currentColor" stroke="none"/></svg></button>
+        </div>
+      </div>
+
+      <div class="overlay-card wide" id="screen-intro" hidden>
+        <h1>Você já conhece o teclado!</h1>
+        <p class="complete-summary">Dó, Ré, Mi, Fá e Sol: são as notas da primeira música.</p>
+        <div class="complete-stats" id="introStats"></div>
+        <div class="menu-buttons">
+          <button id="btnIntroFirstSong" type="button" class="primary">Primeira música ▶</button>
+          <button id="btnIntroRepeat" type="button">Repetir</button>
+          <button id="btnIntroToLevels" type="button" class="ghost">Fases</button>
         </div>
       </div>
 

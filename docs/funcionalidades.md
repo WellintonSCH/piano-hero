@@ -69,3 +69,16 @@ No iPhone, a tela cheia depende de instalar o jogo pela opção "Adicionar à Te
 ## Medição de latência
 
 A opção "Medir latência", no grupo Avançado do menu de opções, coleta amostras do tempo entre a entrada e o som e permite exportá-las em JSON ou CSV.
+
+## Primeiros passos
+
+Antes da fase 1, o mapa tem a bolha 0, "Primeiros passos": uma introdução guiada ao teclado, sem tempo nem pontuação por ritmo, em cinco passos:
+
+1. **As teclas pretas:** os grupos de 2 e de 3 pretas e o Dó à esquerda do grupo de 2; todos os Dós do teclado acendem.
+2. **Todos os Dós:** achar o Dó sem a luz de ajuda.
+3. **Dó, Ré, Mi**, com ajuda.
+4. **Fá e Sol:** as cinco notas na posição de cinco dedos, com ajuda.
+5. **Desafio:** dez notas de Dó a Sol fora de ordem, sem ajuda.
+
+A nota vale em qualquer oitava. Depois de um erro, o texto diz qual tecla foi tocada e onde fica a certa; depois de dois erros seguidos, a tecla certa acende. No fim, a tela mostra acertos, erros, precisão e tempo e leva à primeira música.
+
