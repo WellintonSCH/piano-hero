@@ -150,6 +150,13 @@
 
   <div id="stage">
     <canvas id="game"></canvas>
+    <!-- Primeiros passos: instrução do passo atual, por cima da pista de notas. -->
+    <div id="lessonBanner" class="lesson-banner" hidden aria-live="polite">
+      <span id="lessonStep" class="lesson-step"></span>
+      <strong id="lessonTitle" class="lesson-title"></strong>
+      <p id="lessonText" class="lesson-text"></p>
+      <p id="lessonTip" class="lesson-tip" hidden></p>
+    </div>
     <!-- Contagem 3-2-1: no começo da fase e ao continuar depois de uma pausa. -->
     <div id="countdown" class="countdown" hidden aria-live="polite"></div>
     <!-- Barra de progresso lateral (modo fase): começo embaixo, fim em cima, na altura da
@@ -270,6 +277,17 @@
         </div>
       </div>
 
+      <div class="overlay-card wide" id="screen-intro" hidden>
+        <h1>Você já conhece o teclado!</h1>
+        <p class="complete-summary">Dó, Ré, Mi, Fá e Sol: são as notas da primeira música.</p>
+        <div class="complete-stats" id="introStats"></div>
+        <div class="menu-buttons">
+          <button id="btnIntroFirstSong" type="button" class="primary">Primeira música ▶</button>
+          <button id="btnIntroRepeat" type="button">Repetir</button>
+          <button id="btnIntroToLevels" type="button" class="ghost">Fases</button>
+        </div>
+      </div>
+
       <div class="overlay-card wide" id="screen-complete" hidden>
         <span class="record-badge" id="recordBadge" hidden>Novo recorde!</span>
         <h1 id="completeTitle">Fase completa!</h1>
@@ -321,6 +339,7 @@
 </div>
 
 <script src="latency.js"></script>
+<script src="research.js"></script>
 <script src="audio.js"></script>
 <script src="notes.js"></script>
 <script src="songs.js"></script>

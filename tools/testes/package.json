@@ -1,0 +1,14 @@
+{
+  "name": "piano-hero-testes",
+  "private": true,
+  "description": "Testes automatizados do Piano Hero no Chrome (avaliacao do TCC)",
+  "scripts": {
+    "funcionais": "node avaliacao.js resultados",
+    "complementares": "node avaliacao2.js resultados",
+    "janela": "node janela.js",
+    "render": "node render.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "22.15.0"
+  }
+}

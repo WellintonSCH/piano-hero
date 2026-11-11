@@ -19,10 +19,10 @@ No test suite, linter, or formatter is configured. There is no automated test co
 
 ## Architecture
 
-Eight script files loaded via plain `<script>` tags in `index.html`, in dependency order:
+Nine script files loaded via plain `<script>` tags in `index.html`, in dependency order:
 
 ```
-latency.js → audio.js → notes.js → songs.js → fingering.js → render.js → input.js → main.js
+latency.js → research.js → audio.js → notes.js → songs.js → fingering.js → render.js → input.js → main.js
 ```
 
 All modules attach to a single shared global namespace, `window.PianoHero` (aliased `PH` inside each IIFE). Each file is `(function (PH) { 'use strict'; ... })(window.PianoHero)` — there's no module system, so load order in `index.html` matters and must be preserved.
@@ -46,6 +46,18 @@ All modules attach to a single shared global namespace, `window.PianoHero` (alia
 When `state.waitMode` is on, `updateSong()` additionally clamps `state.songTime` so it never advances past the currently-pending note's timestamp (`state.timeline[state.cursor].time`) — that's the whole mechanism behind "the note waits instead of passing by": `checkAutoMiss()`'s timeout condition simply never becomes true while the clock is pinned. `onSongNote()` then accepts the pending note regardless of `dt` in wait mode (no `HIT_WINDOW`/`PERFECT_WINDOW` check, no "perfect" bonus), and the post-song report skips the timing-tendency text since there's no delta data to summarize.
 
 `state.targetMidis` (not a single `state.target`) is the one source of truth for "what note(s) are due right now" — it drives both scoring (`onSongNote`/`checkAutoMiss`) and rendering (`render.js`'s hint ring and "current" bar glow). Any code path that advances `state.cursor` in song mode **must** also resync `state.targetMidis` to `timeline[state.cursor].midis.slice()` (or `[]` past the end) in the same place — `onSongNote()` and `checkAutoMiss()` already do this, and so does demo mode's `advanceDemo()`. Forgetting this in a new code path is a real bug that already happened once: demo mode's auto-advance moved `state.cursor` forward every frame but left `state.targetMidis` pinned to the very first chord, so the rendered "current" note position silently went stale (looked like notes appearing in the wrong place) while the audio (driven straight from `timeline[cursor]`, not from `state.targetMidis`) played correctly — a state/render desync, not an audio bug, even though it manifested as "the song sounds wrong."
+
+### Hit window and late presses
+
+Normal mode judges a press against the pending slot with an asymmetric window: late up to `HIT_WINDOW` (0.25 s), early up to `earlyWindow()` = min(`HIT_WINDOW`, half the gap since the previous slot), perfect within `PERFECT_WINDOW` (0.08 s). The early cap is a nearest-onset rule: a press closer to the previous note than to this one is never credited here. When `checkAutoMiss()` expires a slot it stores `state.lastExpired`; a press of one of its still-pending keys within 2 × `HIT_WINDOW` is logged as `late` ("Atrasou!") instead of counting a second miss. The old ±0.35/±0.12 window was measured as too lenient (thesis cases CT11/CT12).
+
+### Research mode and test hooks
+
+`research.js` is inert unless the URL has `?pesquisa=<code>`: then it records one attempt per `reset()` in song mode (`PH.research.attemptStart`/`attemptEnd`, called from `main.js`), clears `pianoHeroProgress` when the participant code changes, and draws its own badge/panel (outside the HUD, which is hidden on the map). `?debug` exposes `PH.debugState = state` for the Puppeteer scripts in `tools/testes/` and turns on the raw MIDI console log in `input.js`.
+
+### First steps (guided intro)
+
+`startLesson()` in `main.js` runs a 5-step keyboard intro ("Primeiros passos", bubble 0 on the map, before phase 1) on top of free-mode mechanics: `state.lesson` holds the step, `fill()` pulls notes from `lessonSource` (the step's fixed queue, or a random draw for the last step) instead of `sequence`, and `onFreeNote()` hands off to `onLessonNote()`, which accepts the target **in any octave** (pitch class). `lessonSyncTarget()` lights every octave of the note on step 1; the banner (`#lessonBanner`) shows the instruction and, after a miss, where that key sits relative to the black-key groups. Hint follows each step's `hint` flag and turns on after two misses in a row; the user's own hint preference is saved and restored by `exitLesson()` (called from `showHome`, `startFree`, `startSong` and the lesson end). `render.js` fills the hinted key while `st.lesson` is set. Completion goes to `progress.intro`; with research mode on, the whole intro is one attempt (`modo = introducao`) with per-step times.
 
 ### Mobile performance
 

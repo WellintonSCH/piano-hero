@@ -7,6 +7,8 @@ window.PianoHero = window.PianoHero || {};
 (function (PH) {
   'use strict';
 
+  var DEBUG = /[?&]debug\b/.test(location.search);
+
   // Layout "piano de digitação" clássico: fileira de baixo = 1ª oitava (Dó3..Si3),
   // fileira de cima = 2ª oitava (Dó4..Dó5). Pretas ficam na fileira acima da branca.
   var KEY_MAP = {
@@ -160,8 +162,9 @@ window.PianoHero = window.PianoHero || {};
       var note = d[1];
       var velocity = d[2];
 
-      // Log cru pra depuração — abra o console (F12) se algo parecer errado.
-      console.log('[MIDI] byte0=0x' + d[0].toString(16) + ' nota=' + note + ' vel=' + velocity);
+      // Log cru pra depuração: só com ?debug na URL (um console.log por nota pesa no caminho
+      // crítico de latência e polui o console durante os testes).
+      if (DEBUG) console.log('[MIDI] byte0=0x' + d[0].toString(16) + ' nota=' + note + ' vel=' + velocity);
       raw({ status: d[0], note: note, velocity: velocity });
 
       // Note-on de verdade: comando 0x90 e velocity > 0
