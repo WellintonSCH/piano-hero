@@ -16,10 +16,18 @@
 
   var VISIBLE_NOTES = 7;     // quantas notas ficam empilhadas na tela (modo livre)
   var FALL_SPEED = 220;      // px/s no modo livre
+  var LESSON_FALL_SPEED = 120;   // px/s na introdução guiada: mais calma, para quem nunca tocou
+  var LESSON_MIN = 60, LESSON_MAX = 72;   // introdução: só a oitava do Dó central
   var FLASH_TIME = 0.45;     // segundos do eco de brilho na tecla, depois de soltar
   var PROGRESS_KEY = 'pianoHeroProgress';
 
   var LEAD_TIME = 2.0;       // segundos que uma nota leva caindo até a linha (modo fase)
+  // Barras do modo fase: terminam BAR_GAP px antes da próxima nota e têm no mínimo MIN_BAR px.
+  // Antes o mínimo era a altura padrão (30px) e não havia folga: notas rápidas na mesma tecla
+  // ficavam encostadas ou uma por cima da outra e pareciam uma nota só ("somem").
+  var BAR_GAP = 4;
+  var MIN_BAR = 10;
+  var SONG_MAX_SLOTS = 400;  // teto de segurança; quem limita de fato é LEAD_TIME
   // Janela de acerto (modo normal). Era ±0,35 s / ±0,12 s: larga demais — um toque 200 ms
   // atrasado ainda dava 100% de precisão, e com notas de 0,6 s um toque 450 ms atrasado virava
   // acerto da nota seguinte (avaliação do TCC, casos CT11/CT12). Ainda tolerante p/ iniciante.
@@ -54,6 +62,7 @@
     loopAFrac: null,       // modo fase: início do trecho marcado pra repetir, em fração (0..1) da duração
     loopBFrac: null,       // modo fase: fim do trecho marcado pra repetir, em fração (0..1) da duração
     loopEnabled: false,    // modo fase: true = ao chegar em loopBFrac, volta pra loopAFrac automaticamente
+    loopSection: null,     // índice do trecho escolhido nos botões de "Repetir trecho" (null = música toda)
     speed: 1,              // multiplicador de velocidade (afeta o BPM efetivo da fase)
     waitMode: false,       // modo fase: true = a música pausa na nota até o jogador acertar
     metronome: false,      // modo fase: true = clique de referência em cada tempo (semínima)
@@ -117,6 +126,15 @@
     el.demoBadge = document.getElementById('demoBadge');
     el.handBadge = document.getElementById('handBadge');
     el.scrubberItem = document.getElementById('scrubberItem');
+    el.sectionRow = document.getElementById('sectionRow');
+    el.sectionChips = document.getElementById('sectionChips');
+    el.sectionChips.addEventListener('click', function (e) {
+      var b = e.target.closest('.section-chip');
+      if (!b) return;
+      var k = b.getAttribute('data-k');
+      selectSection(k === '' ? null : Number(k));
+      b.blur();   // senão Espaço/Enter depois "clicaria" de novo no botão em vez de tocar
+    });
     el.scrubTrack = document.getElementById('scrubTrack');
     el.scrubFill = document.getElementById('scrubFill');
     el.scrubThumb = document.getElementById('scrubThumb');
@@ -1003,7 +1021,85 @@
     state.loopAFrac = null;
     state.loopBFrac = null;
     state.loopEnabled = false;
+    state.loopSection = null;
     updateLoopUI();
+  }
+
+  /* ---------------- repetir trecho: botões por trecho ---------------- */
+
+  var LOOP_LEAD = 2;   // s antes do trecho: as notas dele caem desde o topo, em vez de surgirem na linha
+
+  /** Duração de um compasso, em segundos, na velocidade atual. */
+  function barSeconds(song) {
+    var ts = song.timeSignature || [4, 4];
+    return ts[0] * beatSeconds(song) * (4 / ts[1]);
+  }
+
+  /**
+   * Divide a música em trechos de 2, 4 ou 8 compassos (o menor tamanho que dá no máximo
+   * 10 botões). Devolve [{ a, b, bars: [primeiro, último] }] em segundos.
+   */
+  function songSections(song) {
+    var bar = barSeconds(song);
+    if (!state.songDuration || !bar) return [];
+    var nBars = Math.max(1, Math.ceil(state.songDuration / bar - 1e-6));
+    var size = 2;
+    while (Math.ceil(nBars / size) > 10) size *= 2;
+    var out = [];
+    for (var first = 0; first < nBars; first += size) {
+      var last = Math.min(nBars, first + size);
+      out.push({ a: first * bar, b: Math.min(state.songDuration, last * bar), bars: [first + 1, last] });
+    }
+    return out;
+  }
+
+  /** Escolhe um trecho para repetir (ou `null` = música toda) e já leva a música até ele. */
+  function selectSection(k) {
+    if (state.mode !== 'song' || !state.timeline.length) return;
+    if (k == null || k === state.loopSection) { clearLoop(); return; }
+    var sec = songSections(state.song)[k];
+    if (!sec) return;
+    state.loopSection = k;
+    state.loopAFrac = sec.a / state.songDuration;
+    state.loopBFrac = sec.b / state.songDuration;
+    state.loopEnabled = true;
+    jumpToLoopStart();
+    updateLoopUI();
+  }
+
+  /**
+   * Vai para o início do trecho com uma "entrada" de LOOP_LEAD s. `seekTo()` acerta o cursor
+   * na primeira nota do trecho; o relógio recua um pouco depois disso, do mesmo jeito que o
+   * rebobinar de `resumeGame()`, então as notas anteriores não entram na conta.
+   */
+  function jumpToLoopStart() {
+    var a = state.loopAFrac * state.songDuration;
+    seekTo(a);
+    if (!(state.waitMode && !state.demoMode)) state.songTime = a - LOOP_LEAD;
+    syncSongNotes();
+  }
+
+  function renderSections() {
+    var box = el.sectionChips;
+    if (!box) return;
+    var secs = state.mode === 'song' && state.song ? songSections(state.song) : [];
+    var key = (state.song ? state.song.id : '') + ':' + secs.length;
+    if (box.dataset.key !== key) {
+      box.dataset.key = key;
+      var html = '<button type="button" class="section-chip" data-k="">Música toda</button>';
+      secs.forEach(function (s, i) {
+        html += '<button type="button" class="section-chip" data-k="' + i + '" title="Compassos ' +
+          s.bars[0] + ' a ' + s.bars[1] + '">' + (i + 1) + '</button>';
+      });
+      box.innerHTML = html;
+    }
+    el.sectionRow.hidden = secs.length < 2;
+    Array.prototype.forEach.call(box.children, function (b) {
+      var k = b.getAttribute('data-k');
+      var on = k === '' ? state.loopSection == null : Number(k) === state.loopSection;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
   }
 
   function toggleLoopEnabled() {
@@ -1014,6 +1110,7 @@
 
   /** Reflete o estado do loop nos botões e no realce sobre a faixa dedicada abaixo da barra. */
   function updateLoopUI() {
+    renderSections();
     var hasA = state.loopAFrac != null;
     var hasB = state.loopBFrac != null;
     var hasRange = hasA && hasB;
@@ -1520,6 +1617,7 @@
       state.countdownTo = 0;
       var last = full[full.length - 1];
       state.songDuration = last ? last.time + last.dur : 0;
+      updateLoopUI();   // os botões de trecho dependem da duração
       // Primeiro tempo (semínima) a soar: pode ser negativo (clique de contagem, durante
       // o pré-roll) — Math.ceil garante que não pulamos o tempo 0 por erro de arredondamento.
       state.nextClick = Math.ceil(state.songTime / beatSeconds(state.song));
@@ -1570,7 +1668,7 @@
     var layout = PH.render.getLayout();
     for (var i = 0; i < state.notes.length; i++) {
       var cap = layout.hitLine - i * layout.spacing;
-      state.notes[i].y = Math.min(state.notes[i].y + FALL_SPEED * dt, cap);
+      state.notes[i].y = Math.min(state.notes[i].y + (state.lesson ? LESSON_FALL_SPEED : FALL_SPEED) * dt, cap);
     }
     // Ecos de barras resolvidas no modo livre têm duração fixa (não há tempo/BPM aqui).
     for (var j = state.resolvedBars.length - 1; j >= 0; j--) {
@@ -1611,10 +1709,10 @@
    */
   var LESSON_STEPS = [
     { title: 'As teclas pretas',
-      text: 'As teclas pretas vêm em grupos de 2 e de 3, e esse desenho se repete pelo teclado todo. O Dó é a tecla branca logo à esquerda do grupo de 2 pretas. Toque um Dó, qualquer um.',
+      text: 'Esta é a parte do meio do piano. As teclas pretas vêm em grupos de 2 e de 3, e esse desenho se repete pelo piano todo. O Dó é a tecla branca logo à esquerda do grupo de 2 pretas; o Dó marcado com um ponto é o Dó central. Toque um Dó.',
       notes: [60, 60, 60], hint: true, allOctaves: true },
     { title: 'Todos os Dós',
-      text: 'Agora sem a luz de ajuda: ache o Dó sozinho, pelo grupo de 2 pretas. Se conseguir, toque Dós em lugares diferentes do teclado.',
+      text: 'Agora sem a luz de ajuda: ache o Dó pelo grupo de 2 pretas. No piano, o mesmo desenho se repete: Dós mais graves ou mais agudos também valem.',
       notes: [60, 60, 60, 60], hint: false },
     { title: 'Dó, Ré, Mi',
       text: 'O Ré fica entre as 2 pretas, e o Mi, logo à direita delas. Suba e desça: Dó, Ré, Mi.',
@@ -1652,6 +1750,10 @@
     state.mode = 'free';
     state.song = null;
     setKeyboardFor(null);
+    // Começa pequeno: só a oitava do meio (Dó central a Dó5), com teclas grandes. Um piano
+    // de verdade tocado fora dela "dobra" para esta oitava (input.js) e a introdução aceita
+    // a nota em qualquer oitava, então nada se perde.
+    if (PH.notes.setRange(LESSON_MIN, LESSON_MAX)) PH.render.relayout();
     PH.audio.unlock();
     watchPianoLoad();
     updateModeUI();
@@ -1781,7 +1883,10 @@
 
   /** Sai da introdução (fim, menu, outra fase): devolve a preferência de dica e some o texto. */
   function exitLesson() {
-    if (state.lesson) state.hint = state.lesson.savedHint;
+    if (state.lesson) {
+      state.hint = state.lesson.savedHint;
+      if (PH.notes.resetRange()) PH.render.relayout();   // volta ao teclado padrão
+    }
     state.lesson = null;
     if (el.lessonBanner) el.lessonBanner.hidden = true;
   }
@@ -1881,14 +1986,16 @@
     var timeline = state.timeline;
     var arr = [];
 
-    for (var i = state.cursor; i < timeline.length && (i - state.cursor) < VISIBLE_NOTES; i++) {
+    // Antes o limite aqui era VISIBLE_NOTES (7, pensado pro modo livre): em trechos rápidos
+    // as notas além da 7ª só apareciam já perto da linha.
+    for (var i = state.cursor; i < timeline.length && (i - state.cursor) < SONG_MAX_SLOTS; i++) {
       var chord = timeline[i];
       var dt = chord.time - state.songTime;
       if (dt > LEAD_TIME + 0.05) break;
       // O comprimento da barra reflete a duração real da nota (semínima, mínima...) —
       // uma nota mais longa cai como uma barra mais comprida, e continua "soando"
       // (barra + tecla acesas) enquanto ela deveria estar sendo segurada.
-      var len = Math.max(chord.dur * pxPerSec, layout.noteH);
+      var len = barLen(chord.dur, timeline[i + 1] ? timeline[i + 1].time - chord.time : Infinity, pxPerSec);
       var y = layout.hitLine - dt * pxPerSec;
       var midis = i === state.cursor ? state.targetMidis : chord.midis;
       for (var m = 0; m < midis.length; m++) {
@@ -1905,7 +2012,7 @@
       var ac = auto[a];
       var adt = ac.time - state.songTime;
       if (adt > LEAD_TIME + 0.05) break;
-      var alen = Math.max(ac.dur * pxPerSec, layout.noteH);
+      var alen = barLen(ac.dur, auto[a + 1] ? auto[a + 1].time - ac.time : Infinity, pxPerSec);
       for (var am = 0; am < ac.midis.length; am++) {
         arr.push({ midi: ac.midis[am], y: layout.hitLine - adt * pxPerSec, len: alen,
                    auto: true, hand: ac.hands[am], finger: ac.fingers[am] });
@@ -1922,8 +2029,13 @@
       if (state.songTime > rb.time + rb.dur + 0.05) { state.resolvedBars.splice(j, 1); continue; }
       var rdt = rb.time - state.songTime;
       rb.y = layout.hitLine - rdt * pxPerSec;
-      rb.len = Math.max(rb.dur * pxPerSec, layout.noteH);
+      rb.len = barLen(rb.dur, rb.dur, pxPerSec);
     }
+  }
+
+  /** Comprimento (px) da barra de uma nota: até a próxima nota, com folga, e nunca sumindo. */
+  function barLen(dur, untilNext, pxPerSec) {
+    return Math.max(MIN_BAR, Math.min(dur, untilNext) * pxPerSec - BAR_GAP);
   }
 
   /** Passa pro próximo acorde se o tempo dele expirou sem o jogador acertar todas as notas. */
@@ -1953,6 +2065,8 @@
 
   function checkSongEnd() {
     if (state.mode !== 'song' || state.cursor < state.timeline.length) return;
+    // Repetindo o último trecho: a música não "acaba", volta ao início do trecho (updateSong).
+    if (state.loopEnabled && state.loopBFrac != null) return;
     if (state.demoMode) {
       // Demonstração é só uma prévia — não é uma tentativa de verdade, então não abre
       // a tela de "fase completa" nem grava progresso/pontuação. Antes o jogo só parava
@@ -2005,7 +2119,7 @@
     // `cursor`/`targetMidis` de novo a partir da nova posição.
     if (state.loopEnabled && state.loopBFrac != null && state.loopAFrac != null &&
         state.songTime >= state.loopBFrac * state.songDuration) {
-      seekTo(state.loopAFrac * state.songDuration);
+      jumpToLoopStart();
       return;
     }
     if (state.demoMode) {

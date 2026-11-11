@@ -84,3 +84,10 @@ Antes da fase 1, o mapa tem a bolha 0, "Primeiros passos": uma introdução guia
 
 A nota vale em qualquer oitava. Depois de um erro, o texto diz qual tecla foi tocada e onde fica a certa; depois de dois erros seguidos, a tecla certa acende. No fim, a tela mostra acertos, erros, precisão e tempo e leva à primeira música.
 
+## Ajustes de 11/11/2026 (depois do teste do autor)
+
+- Teclado cortado em telas de notebook: o palco agora cabe na altura da janela.
+- Notas rápidas na mesma tecla não se sobrepõem mais; todas as notas dos próximos 2 s aparecem.
+- Repetir trecho: botões por trecho (Música toda, 1, 2, 3…) abaixo do teclado, no lugar da faixa de arrastar.
+- Primeiros passos: só a oitava do meio, com nome das notas nas teclas e o Dó central marcado; notas caem mais devagar.
+- Hot Cross Buns (primeira música) passou de 96 para 72 BPM.

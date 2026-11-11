@@ -320,7 +320,7 @@
       </div>
       <span id="scrubTotal" class="scrub-time">0:00</span>
     </div>
-    <div class="loop-row">
+    <div class="loop-row" hidden>
       <span class="scrub-time" aria-hidden="true"></span>
       <div id="loopTrack" class="loop-track" title="Arraste aqui pra marcar um trecho da música e repeti-lo">
         <div id="loopRange" class="loop-range" hidden>
@@ -330,7 +330,13 @@
       </div>
       <span class="scrub-time" aria-hidden="true"></span>
     </div>
-    <div class="loop-controls">
+    <!-- Repetir trecho: um botão por trecho de alguns compassos (antes era arrastar numa faixa
+         fina, difícil de achar e de acertar). Clicar liga a repetição; "Música toda" desliga. -->
+    <div class="section-row" id="sectionRow">
+      <span class="section-label">Repetir trecho</span>
+      <div class="section-chips" id="sectionChips" role="group" aria-label="Repetir trecho"></div>
+    </div>
+    <div class="loop-controls" hidden>
       <button id="loopToggleBtn" type="button" class="icon-btn ghost" aria-label="Repetir o trecho marcado" title="Repetir o trecho marcado" disabled>🔁 Repetir trecho</button>
       <button id="loopClearBtn" type="button" class="icon-btn ghost" aria-label="Limpar marcação do trecho" title="Limpar marcação" hidden>✕</button>
     </div>

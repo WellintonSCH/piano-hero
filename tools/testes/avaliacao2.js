@@ -121,17 +121,12 @@ async function playTimed(p, song, offsetMs) {
   res.CT14_metronome_checked = await p.evaluate(() => document.getElementById('metronomeToggle').checked);
   await p.close();
 
-  // CT15: repeticao de trecho - marcar 10%..25% da musica e verificar que o tempo volta ao inicio do trecho
+  // CT15: repeticao de trecho - clicar no botao do trecho 2 e verificar que o tempo volta ao inicio dele
   p = await open(browser); await openSong(p, 'twinkle'); await p.click('#btnPlayNormal'); await sleep(3500);
-  const lt = await p.$('#loopTrack'); const lb = lt ? await lt.boundingBox() : null;
-  res.CT15_loopTrack_visible = !!lb;
-  if (lb) {
-    const y = lb.y + lb.height / 2;
-    await p.mouse.move(lb.x + lb.width * 0.10, y); await p.mouse.down();
-    await p.mouse.move(lb.x + lb.width * 0.18, y, { steps: 5 }); await p.mouse.move(lb.x + lb.width * 0.25, y, { steps: 5 });
-    await p.mouse.up(); await sleep(300);
-    const resumeIfPaused = async () => p.evaluate(() => { const o = document.getElementById('overlay'); return o && !o.hidden; });
-    if (await resumeIfPaused()) { await p.keyboard.press('Escape'); }
+  res.CT15_chips = await p.evaluate(() => [...document.querySelectorAll('.section-chip')].map(b => b.textContent + (b.title ? ' (' + b.title + ')' : '')));
+  await p.evaluate(() => document.querySelectorAll('.section-chip')[2].click()); await sleep(200);
+  res.CT15_trecho_s = await p.evaluate(() => { const s = PianoHero.debugState || null; return s && [s.loopAFrac * s.songDuration, s.loopBFrac * s.songDuration]; });
+  {
     const samples = [];
     for (let i = 0; i < 60; i++) { samples.push(await p.evaluate(() => document.getElementById('vScrubTime')?.textContent || '')); await sleep(250); }
     res.CT15_loop_samples = samples;
