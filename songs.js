@@ -280,7 +280,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'hotcross',
       title: 'Hot Cross Buns',
       subtitle: 'a clássica primeira lição',
-      bpm: 96,
+      bpm: 72,
       timeSignature: [4, 4],
       notes: hotcross.notes,
       durations: hotcross.durations

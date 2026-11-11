@@ -36,6 +36,14 @@ window.PianoHero = window.PianoHero || {};
     // entre menu e partida e a barra do Safari entra/sai, e com um desconto fixo o palco
     // ficava mais alto que a tela e o teclado era cortado embaixo. `fitCheck()` (chamado a
     // cada quadro em draw()) refaz esta conta sempre que esse espaço muda.
+    // Computador: o palco também cabe na janela. Antes o canvas tinha altura fixa (até
+    // 680px) e, num notebook (~650px de área útil), o #stage encolhia e cortava a parte
+    // de baixo — justamente o teclado. Agora a altura é a que sobra na janela abaixo do
+    // topo do palco, descontando o que vem embaixo dele (barra de trecho, rodapé).
+    if (!PH.notes.COMPACT) {
+      var fit = window.innerHeight - (canvas.getBoundingClientRect().top + window.scrollY) - belowStage();
+      cssH = Math.round(Math.max(MIN_DESKTOP_H, Math.min(cssH, fit)));
+    }
     if (PH.notes.COMPACT) {
       cssH = window.innerWidth > window.innerHeight
         ? Math.round(Math.max(160, viewportHeight() - canvas.getBoundingClientRect().top - 6))
@@ -53,6 +61,18 @@ window.PianoHero = window.PianoHero || {};
     buildLayout(cssW, cssH);
   }
 
+  var MIN_DESKTOP_H = 340;
+
+  /** Altura (px) do que fica abaixo do palco no computador: elementos seguintes do #app + margens. */
+  function belowStage() {
+    var stage = canvas.parentNode, h = 0, gap = 14, el = stage.nextElementSibling;
+    for (; el; el = el.nextElementSibling) {
+      if (el.hidden || el.offsetParent === null) continue;
+      h += el.offsetHeight + gap;
+    }
+    return h + 22;   // padding de baixo do body + folga
+  }
+
   /** Altura da área de fato visível (no Safari, sem a barra de endereço/ferramentas). */
   function viewportHeight() {
     return window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -68,18 +88,20 @@ window.PianoHero = window.PianoHero || {};
   var lastFitKey = '';
   var lastFitAt = -1e9;
   function fitCheck(now) {
-    if (!PH.notes.COMPACT || !canvas.parentNode.clientWidth) return;   // oculto (celular em pé)
+    if (!canvas.parentNode.clientWidth) return;   // oculto (celular em pé)
     // O Safari às vezes rola a página sozinho (foco em botão, barra de endereço) e o jogo
     // "subia", cortando o teclado: no celular a página nunca fica rolada.
-    if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
+    if (PH.notes.COMPACT && (window.scrollY || window.scrollX)) window.scrollTo(0, 0);
     // No máximo ~4x por segundo: getBoundingClientRect() força o navegador a fechar o layout,
     // e a cada quadro isso pesava no celular. 250ms de atraso num ajuste de tamanho não se nota.
     if (now !== undefined) {
       if (now - lastFitAt < 250) return;
       lastFitAt = now;
     }
+    // No computador o que vem abaixo do palco também muda (barra de trecho aparece no modo
+    // música e some no livre), então entra na chave.
     var key = canvas.parentNode.clientWidth + ',' + Math.round(canvas.getBoundingClientRect().top) +
-      ',' + Math.round(viewportHeight());
+      ',' + Math.round(viewportHeight()) + (PH.notes.COMPACT ? '' : ',' + belowStage());
     if (key !== lastFitKey) {
       lastFitKey = key;
       resize();
@@ -194,7 +216,10 @@ window.PianoHero = window.PianoHero || {};
     shake = Math.max(0, shake - dt * 45);
   }
 
+  var MIDDLE_C = 60;
+
   function roundRect(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, h / 2, w / 2));   // barra curta de nota rápida: canto não "estoura"
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -315,11 +340,13 @@ window.PianoHero = window.PianoHero || {};
         roundRect(x, y, w, h, 8);
         ctx.stroke();
 
-        ctx.fillStyle = isTarget ? '#0b0d17' : 'rgba(11,13,23,.7)';
-        ctx.font = (isTarget ? 'bold ' : '') + '13px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(PH.notes.noteName(n.midi), k.cx, y + h / 2 + 1);
+        if (h >= 15) {   // em barra muito curta o nome não cabe; a cor e a posição bastam
+          ctx.fillStyle = isTarget ? '#0b0d17' : 'rgba(11,13,23,.7)';
+          ctx.font = (isTarget ? 'bold ' : '') + (h >= 20 ? '13px' : '11px') + ' system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(PH.notes.noteName(n.midi), k.cx, y + h / 2 + 1);
+        }
       }
     }
 
@@ -348,7 +375,8 @@ window.PianoHero = window.PianoHero || {};
         ctx.stroke();
 
         if (st.hint && st.targetMidis && st.targetMidis.indexOf(k.midi) !== -1) hintRing(k);
-        label(k, '#6a7290', k.y + k.h - 14);
+        label(k, '#6a7290', k.y + k.h - 14, st.lesson);
+        if (k.midi === MIDDLE_C) middleCMark(k);
       }
 
       for (i = 0; i < keys.length; i++) {
@@ -406,9 +434,35 @@ window.PianoHero = window.PianoHero || {};
         ctx.restore();
       }
 
-      function label(key, color, y) {
+      /**
+       * Marca o Dó central (Dó4): um ponto na tecla e, se couber, o texto "Dó central". Ajuda o
+       * iniciante a se achar no piano de verdade, que tem muito mais teclas que a tela.
+       */
+      function middleCMark(key) {
+        ctx.fillStyle = '#4a6fe0';
+        ctx.beginPath();
+        ctx.arc(key.cx, key.y + key.h - 34, Math.min(5, key.w / 6), 0, Math.PI * 2);
+        ctx.fill();
+        if (key.w >= 56) {
+          ctx.font = 'bold 11px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText('Dó central', key.cx, key.y + key.h - 46);
+        }
+      }
+
+      function label(key, color, y, names) {
         // No celular (teclado compacto) não há teclado de PC — a letra da tecla não diz nada,
         // então as brancas mostram o nome da nota (as pretas são estreitas demais pra texto).
+        // Na introdução guiada, também no computador: o objetivo é aprender o nome das teclas.
+        if (names && !key.black) {
+          ctx.fillStyle = color;
+          ctx.font = 'bold 14px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(PH.notes.noteName(key.midi), key.cx, y);
+          return;
+        }
         var txt = PH.notes.COMPACT
           ? (key.black ? '' : PH.notes.noteName(key.midi))
           : (PH.input && PH.input.labelFor ? PH.input.labelFor(key.midi) : '');

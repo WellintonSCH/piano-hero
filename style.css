@@ -526,6 +526,38 @@ button.ghost:hover { color: var(--text); }
 .loop-handle-a { left: 0%; }
 .loop-handle-b { left: 100%; }
 
+/* ---------- Repetir trecho: um botão por trecho ---------- */
+
+.section-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.section-row[hidden], .loop-row[hidden], .loop-controls[hidden] { display: none; }
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.section-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.section-chip {
+  height: 30px;
+  min-width: 34px;
+  padding: 0 11px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 999px;
+}
+.section-chip.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(255, 209, 88, .14);
+}
+
 /* ---------- Botões de controle do loop ---------- */
 
 .loop-controls {
