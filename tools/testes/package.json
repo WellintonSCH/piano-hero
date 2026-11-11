@@ -6,7 +6,9 @@
     "funcionais": "node avaliacao.js resultados",
     "complementares": "node avaliacao2.js resultados",
     "janela": "node janela.js",
-    "render": "node render.js"
+    "render": "node render.js",
+    "introducao": "mkdir -p capturas && node introducao.js capturas",
+    "fim": "mkdir -p capturas && node fim-musica.js capturas"
   },
   "dependencies": {
     "puppeteer-core": "22.15.0"
