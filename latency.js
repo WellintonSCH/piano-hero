@@ -63,6 +63,16 @@ window.PianoHero = window.PianoHero || {};
       totalMs: round(endPerf - meta.t0)
     });
 
+    // Contexto de cada amostra, para o relatório separar as condições (modo livre x música
+    // tocando) e registrar o que o próprio navegador informa sobre a saída de áudio.
+    var c = PH.latencyContext ? PH.latencyContext() : {};
+    var last = samples[samples.length - 1];
+    last.mode = c.mode || '';
+    last.songPlaying = !!c.songPlaying;
+    last.baseLatencyMs = ctx && ctx.baseLatency != null ? round(ctx.baseLatency * 1000) : '';
+    last.outputLatencyMs = ctx && ctx.outputLatency != null ? round(ctx.outputLatency * 1000) : '';
+    last.sampleRate = ctx ? ctx.sampleRate : '';
+
     if (samples.length > MAX_SAMPLES) samples.shift();
   }
 
@@ -116,10 +126,13 @@ window.PianoHero = window.PianoHero || {};
   }
 
   function exportCSV() {
-    var header = 'ts,source,midi,sampleLoaded,estimated,inputToDispatchMs,dispatchToHandleMs,handleToScheduleMs,scheduleToOutputMs,totalMs';
+    // Colunas novas só no fim, para não quebrar quem lê as antigas pela posição.
+    var header = 'ts,source,midi,sampleLoaded,estimated,inputToDispatchMs,dispatchToHandleMs,handleToScheduleMs,scheduleToOutputMs,totalMs,mode,songPlaying,baseLatencyMs,outputLatencyMs,sampleRate,userAgent';
+    var ua = '"' + navigator.userAgent.replace(/"/g, "'") + '"';
     var rows = samples.map(function (s) {
       return [s.ts, s.source, s.midi, s.sampleLoaded, s.estimated,
-        s.inputToDispatchMs, s.dispatchToHandleMs, s.handleToScheduleMs, s.scheduleToOutputMs, s.totalMs].join(',');
+        s.inputToDispatchMs, s.dispatchToHandleMs, s.handleToScheduleMs, s.scheduleToOutputMs, s.totalMs,
+        s.mode, s.songPlaying, s.baseLatencyMs, s.outputLatencyMs, s.sampleRate, ua].join(',');
     });
     download('piano-hero-latencia-' + Date.now() + '.csv', [header].concat(rows).join('\n'), 'text/csv');
   }

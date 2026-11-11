@@ -83,6 +83,10 @@
   };
   // Só com ?debug na URL: expõe o estado para os testes automatizados (relógio da música etc.).
   if (/[?&]debug\b/.test(location.search)) PH.debugState = state;
+  // Lido por latency.js para marcar a condição de cada amostra de latência.
+  PH.latencyContext = function () {
+    return { mode: state.lesson ? 'intro' : state.mode, songPlaying: state.mode === 'song' && state.running };
+  };
 
   function boot() {
     el.canvas = document.getElementById('game');
