@@ -646,6 +646,27 @@ button.ghost:hover { color: var(--text); }
   gap: 1px;
 }
 
+/* Recado ao voltar sozinho para a tela da música (ex.: fim da demonstração) */
+.song-setup p.setup-notice {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--accent);
+  background: rgba(111, 155, 255, .12);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+}
+/* Modo sugerido pelo recado: borda de destaque que pulsa de leve */
+.setup-mode.suggested {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(111, 155, 255, .35);
+  animation: setupSuggest 1.6s ease-in-out infinite;
+}
+@keyframes setupSuggest { 50% { box-shadow: 0 0 0 5px rgba(111, 155, 255, .12); } }
+@media (prefers-reduced-motion: reduce) { .setup-mode.suggested { animation: none; } }
+
 .setup-text strong { font-size: 15px; }
 .setup-text small { font-size: 12px; opacity: .75; font-weight: 500; }
 

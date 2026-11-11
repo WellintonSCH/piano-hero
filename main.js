@@ -28,6 +28,7 @@
   // Toque ADIANTADO só vale até a metade do intervalo desde a nota anterior: mais cedo que isso,
   // ele está mais perto da nota anterior do que desta, então não pode ser creditado a esta.
   var EARLY_FRACTION = 0.5;
+  var DEMO_END_PAUSE_MS = 1500;   // fim da demonstração: deixa a última nota soar antes de voltar
   var PRE_ROLL = 3;          // segundos de preparo (contagem 3-2-1) antes do tempo 0 da música
   var RESUME_COUNTDOWN = 3;  // segundos de contagem regressiva ao continuar depois de uma pausa
   var REWIND_ANIM = 0.6;     // segundos (reais) da animação das notas voltando pra cima ao continuar
@@ -194,6 +195,8 @@
       setReportExpanded(el.completeReport.hidden);
     });
     el.btnNextLevel = document.getElementById('btnNextLevel');
+    el.btnTryNormal = document.getElementById('btnTryNormal');
+    el.setupNotice = document.getElementById('setupNotice');
 
     PH.render.init(el.canvas);
     PH.input.initKeyboard();
@@ -235,6 +238,22 @@
       updateModeUI();   // a tela de fim escondeu a barra de progresso (ver showScreen)
       state.running = true;
       reset();
+    });
+    // Fim de fase: voltar à tela da música (trocar de modo/velocidade) ou, depois do Modo
+    // espera, tocar a mesma música no ritmo, na mesma velocidade.
+    document.getElementById('btnBackToSong').addEventListener('click', function () {
+      if (state.song) showSongSetup(state.song);
+    });
+    el.btnTryNormal.addEventListener('click', function () {
+      if (!state.song) return;
+      state.waitMode = false;
+      state.demoMode = false;
+      el.waitToggle.checked = false;
+      el.demoToggle.checked = false;
+      progress.prefs.wait = false;
+      progress.prefs.demo = false;
+      saveProgressState();
+      startSong(state.song);
     });
     el.btnNextLevel.addEventListener('click', function () {
       var next = nextSong();
@@ -647,7 +666,11 @@
    * Demonstração). O ranking da fase fica recolhido no fim. As escolhas só sincronizam os
    * mesmos toggles/preferências do menu ⚙ — não é um estado paralelo.
    */
-  function showSongSetup(song) {
+  /**
+   * `notice` (opcional): recado no topo do cartão ao voltar para cá sozinho, ex. no fim da
+   * demonstração — `{ text, suggest: 'wait' | 'normal' }`, e o botão sugerido ganha destaque.
+   */
+  function showSongSetup(song, notice) {
     setupSong = song;
     el.setupTitle.textContent = song.title;
     el.setupSubtitle.textContent = song.subtitle || '';
@@ -682,6 +705,11 @@
       ? 'Ranking da fase · recorde ' + list[0].score + ' pts'
       : 'Ranking da fase · nenhuma tentativa ainda';
     el.setupRankingBox.open = false;
+
+    el.setupNotice.textContent = notice ? notice.text : '';
+    el.setupNotice.hidden = !notice;
+    el.btnPlayWait.classList.toggle('suggested', !!(notice && notice.suggest === 'wait'));
+    el.btnPlayNormal.classList.toggle('suggested', !!(notice && notice.suggest === 'normal'));
     showScreen('song');
   }
 
@@ -1923,10 +1951,20 @@
     if (state.mode !== 'song' || state.cursor < state.timeline.length) return;
     if (state.demoMode) {
       // Demonstração é só uma prévia — não é uma tentativa de verdade, então não abre
-      // a tela de "fase completa" nem grava progresso/pontuação.
+      // a tela de "fase completa" nem grava progresso/pontuação. Antes o jogo só parava
+      // aqui, com um aviso de menos de 1 s, e o jogador ficava perdido na tela parada:
+      // agora, depois de deixar a última nota soar, volta sozinho para a tela da música.
       state.running = false;
       updateDemoBadge();
-      showFeedback('Demonstração concluída — desative e tente você mesmo!', 'info');
+      var song = state.song, gen = state.demoGen;
+      setTimeout(function () {
+        // Só se nada mudou nesse meio-tempo (não reiniciou, não saiu, não abriu menu).
+        if (state.song !== song || state.demoGen !== gen || state.running || !el.overlay.hidden) return;
+        showSongSetup(song, listenOnly(song)
+          ? { text: 'Fim da música.' }
+          : { text: 'Demonstração concluída. Agora é a sua vez: comece pelo Modo espera, que espera você acertar cada nota.',
+              suggest: 'wait' });
+      }, DEMO_END_PAUSE_MS);
     } else {
       finishSong();
     }
@@ -2201,7 +2239,12 @@
     el.completeSummary.textContent = summary.perfect + ' perfeitas · ' + summary.good + ' boas · ' +
       (summary.wrong + summary.timeout) + ' erros';
     setReportExpanded(false);
+    // Depois do Modo espera, o próximo passo natural é a mesma música no ritmo; senão, a
+    // próxima fase. "Voltar à música" e "Repetir" ficam sempre.
+    var tryNormal = state.waitMode && !listenOnly(state.song);
+    el.btnTryNormal.hidden = !tryNormal;
     el.btnNextLevel.hidden = !hasNext;
+    el.btnNextLevel.classList.toggle('primary', !tryNormal);
 
     showScreen('complete');
     animateComplete();
