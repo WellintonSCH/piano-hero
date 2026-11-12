@@ -28,7 +28,7 @@ const target = p => p.evaluate(() => { const s = PianoHero.debugState; return s.
     await sleep(500); await p.screenshot({ path: `${OUT}/${tag}-4-muitobem.png` });
     await sleep(1200);
     let guard = 0, step3shot = false;
-    while (guard++ < 80) {
+    while (guard++ < 400) {
       const scr = await p.evaluate(() => !document.getElementById('screen-intro').hidden);
       if (scr) break;
       const t = await target(p);

@@ -10,18 +10,18 @@ São 21 músicas: 15 escritas à mão em `songs.js` e 6 importadas em `songs/`.
 |---|---|---|
 | `hotcross` | Hot Cross Buns | 72 |
 | `twinkle` | Brilha Brilha Estrelinha | 100 |
-| `mary` | Maria Tinha um Carneirinho | 108 |
-| `londonbridge` | A Ponte de Londres | 108 |
-| `frere` | Irmão Jorge | 104 |
-| `row` | Reme, Reme o Barquinho | 100 |
+| `mary` | Maria Tinha um Carneirinho | 84 |
+| `londonbridge` | A Ponte de Londres | 84 |
+| `frere` | Irmão Jorge | 80 |
+| `row` | Reme, Reme o Barquinho | 80 |
 | `canon` | Cânone em Ré (baixo) | 80 |
-| `birthday` | Parabéns pra Você | 112 |
-| `ode` | Ode à Alegria | 112 |
-| `hanschen` | Hänschen Klein | 108 |
-| `lobato` | Seu Lobato Tinha um Sítio | 112 |
-| `saints` | When the Saints | 120 |
-| `brahms` | Canção de Ninar | 96 |
-| `jingle` | Jingle Bells | 128 |
+| `birthday` | Parabéns pra Você | 88 |
+| `ode` | Ode à Alegria | 88 |
+| `hanschen` | Hänschen Klein | 84 |
+| `lobato` | Seu Lobato Tinha um Sítio | 88 |
+| `saints` | When the Saints | 92 |
+| `brahms` | Canção de Ninar | 80 |
+| `jingle` | Jingle Bells | 100 |
 | `furelise` | Für Elise (tema inicial) | 60 |
 
 ### Importadas (`songs/*.json`)

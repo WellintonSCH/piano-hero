@@ -1025,7 +1025,9 @@
 
   /* ---------------- repetir trecho: botões por trecho ---------------- */
 
-  var LOOP_LEAD = 2;   // s antes do trecho: as notas dele caem desde o topo, em vez de surgirem na linha
+  // s antes do trecho, com contagem 3-2-1: as notas caem desde o topo (LEAD_TIME = 2 s) e o
+  // jogador tem tempo de se preparar, em vez de a primeira nota já chegar na linha.
+  var LOOP_LEAD = 3;
 
   /** Duração de um compasso, em segundos, na velocidade atual. */
   function barSeconds(song) {
@@ -1073,7 +1075,9 @@
   function jumpToLoopStart() {
     var a = state.loopAFrac * state.songDuration;
     seekTo(a);
-    if (!(state.waitMode && !state.demoMode)) state.songTime = a - LOOP_LEAD;
+    state.songTime = a - LOOP_LEAD;   // também no modo espera: o relógio para de novo na 1ª nota
+    countdownShown = null;
+    state.countdownTo = a;            // 3-2-1 até o início do trecho (updateCountdown)
     syncSongNotes();
   }
 
@@ -1805,9 +1809,15 @@
     { title: 'Fá e Sol',
       text: 'O Fá fica logo à esquerda do grupo de 3 pretas, e o Sol vem em seguida. Com o polegar no Dó, cada dedo fica numa tecla: Dó, Ré, Mi, Fá, Sol.',
       notes: [60, 62, 64, 65, 67, 65, 64, 62, 60], hint: true },
+    { title: 'Lá e Si',
+      text: 'Depois do Sol vêm o Lá, entre a 2ª e a 3ª das 3 pretas, e o Si, logo depois delas. Depois do Si, o desenho recomeça com outro Dó. Para a direita o som fica mais agudo; para a esquerda, mais grave.',
+      notes: [67, 69, 71, 72, 71, 69, 67], hint: true },
+    { title: 'A oitava inteira',
+      text: 'Dó, Ré, Mi, Fá, Sol, Lá, Si e Dó de novo: 8 teclas brancas formam uma oitava. Suba e desça a escala, agora sem a luz.',
+      notes: [60, 62, 64, 65, 67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60], hint: false },
     { title: 'Desafio',
-      text: 'Sem luz e fora de ordem: Dó, Ré, Mi, Fá e Sol misturados. Se errar duas vezes a mesma nota, a tecla acende.',
-      random: { pool: [60, 62, 64, 65, 67], count: 10 }, hint: false }
+      text: 'Sem luz e fora de ordem: as 7 notas misturadas. Se errar duas vezes a mesma nota, a tecla acende.',
+      random: { pool: [60, 62, 64, 65, 67, 69, 71], count: 12 }, hint: false }
   ];
   var LESSON_TIPS = {
     0: 'O Dó é a tecla branca logo à esquerda do grupo de 2 pretas.',
@@ -2159,6 +2169,9 @@
       var chord = timeline[i];
       var dt = chord.time - state.songTime;
       if (dt > LEAD_TIME + 0.05) break;
+      // Repetindo um trecho: as notas depois do fim dele não aparecem (antes apareciam caindo
+      // e sumiam no meio do caminho quando o trecho voltava ao início).
+      if (state.loopEnabled && state.loopBFrac != null && chord.time >= state.loopBFrac * state.songDuration - 1e-6) break;
       // O comprimento da barra reflete a duração real da nota (semínima, mínima...) —
       // uma nota mais longa cai como uma barra mais comprida, e continua "soando"
       // (barra + tecla acesas) enquanto ela deveria estar sendo segurada.
