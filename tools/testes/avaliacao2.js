@@ -22,7 +22,7 @@ async function open(browser, opts = {}) {
   if (opts.device) await p.emulate(opts.device); else await p.setViewport({ width: 1280, height: 860 });
   if (!opts.keepStorage) await p.evaluateOnNewDocument(() => { try { localStorage.clear(); } catch (e) {} });
   await p.evaluateOnNewDocument(MIDI_MOCK);
-  await p.goto(BASE, { waitUntil: 'networkidle0' });
+  await p.goto(BASE + (opts.debug ? '?debug' : ''), { waitUntil: 'networkidle0' });
   await sleep(1200);
   return p;
 }
@@ -145,9 +145,11 @@ async function playTimed(p, song, offsetMs) {
   res.CT16_mobile_play = await completeText(p);
   await p.close();
 
-  // Latencia sob carga: "O Voo do Besouro" em modo normal, 200 teclas, CPU normal e 4x mais lenta
+  // Latencia sob carga: "Für Elise (tema inicial)", a musica mais densa do repertorio (3,6 notas/s),
+  // em modo normal e repetida em laco (o tema dura 10 s), 400 teclas, CPU normal e 4x mais lenta
   for (const thr of [1, 4]) {
-    p = await open(browser); await openSong(p, 'bumblebee'); await p.click('#btnPlayNormal'); await sleep(4000);
+    p = await open(browser, { debug: true }); await openSong(p, 'furelise'); await p.click('#btnPlayNormal');
+    await p.evaluate(() => { const s = PianoHero.debugState; s.loopAFrac = 0; s.loopBFrac = 1; s.loopEnabled = true; }); await sleep(4000);
     const cdp = await p.target().createCDPSession(); await cdp.send('Emulation.setCPUThrottlingRate', { rate: thr });
     await p.evaluate(() => PianoHero.latency.clear());
     const ks = Object.keys(KEY).map(Number);

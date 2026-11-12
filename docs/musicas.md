@@ -8,7 +8,7 @@ São 21 músicas: 15 escritas à mão em `songs.js` e 6 importadas em `songs/`.
 
 | ID | Título | BPM |
 |---|---|---|
-| `hotcross` | Hot Cross Buns | 96 |
+| `hotcross` | Hot Cross Buns | 72 |
 | `twinkle` | Brilha Brilha Estrelinha | 100 |
 | `mary` | Maria Tinha um Carneirinho | 108 |
 | `londonbridge` | A Ponte de Londres | 108 |
@@ -26,16 +26,7 @@ São 21 músicas: 15 escritas à mão em `songs.js` e 6 importadas em `songs/`.
 
 ### Importadas (`songs/*.json`)
 
-| Arquivo | Título | BPM | Compasso | Posições na linha do tempo |
-|---|---|---|---|---|
-| `canonfull.json` | Cânone em Ré | 100 | 4/4 | 348 |
-| `passacaglia.json` | Passacaglia | 130 | 4/4 | 582 |
-| `swanlake.json` | O Lago dos Cisnes | 100 | 4/4 | 211 |
-| `gymnopedie1.json` | Gymnopédie Nº 1 | 54 | 3/4 | 178 |
-| `fureliseeasy.json` | Für Elise (duas mãos) | 60 | 3/4 | 87 |
-| `bumblebee.json` | O Voo do Besouro | 144 | 2/4 | 774 |
-
-A situação de direitos autorais dos arranjos importados ainda precisa ser conferida, porque um arranjo pode ter direitos próprios mesmo quando a obra original é de domínio público.
+Nenhuma no momento. As seis peças importadas (Cânone em Ré, Passacaglia, O Lago dos Cisnes, Gymnopédie Nº 1, Für Elise a duas mãos e O Voo do Besouro) e a pasta `XML/` com as partituras de origem foram removidas em 12/11/2026: eram difíceis demais para o público iniciante, e os direitos dos arranjos não tinham sido conferidos. O mecanismo de importação continua funcionando (`songs/manifest.json` vazio).
 
 ## Formato
 

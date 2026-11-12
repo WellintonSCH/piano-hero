@@ -8,8 +8,8 @@ Só usa a biblioteca padrão do Python (zipfile, xml.etree, json, argparse) --
 não precisa instalar nada.
 
 USO BÁSICO
-  python tools/mxl_to_song.py XML/scores/Canon_in_D_easy.mxl songs/canonfull.json \
-      --id canonfull --title "Cânone em Ré" --subtitle "Pachelbel"
+  python tools/mxl_to_song.py partitura.mxl songs/minha.json \
+      --id minha --title "Minha Música" --subtitle "Compositor"
 
 Por padrão usa TODAS as vozes que têm nota (funde num "acorde" quando duas
 vozes tocam no mesmo instante). Pra escolher só algumas vozes (útil quando a
