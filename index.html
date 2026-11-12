@@ -173,7 +173,13 @@
       <div class="overlay-card wide home-card" id="screen-home">
         <div class="home-head">
           <h1>Piano Hero</h1>
+          <!-- Sequência de dias e total de estrelas (gamificacao.js); clicar abre o perfil. -->
+          <button id="homeStatus" type="button" class="home-status" title="Seu perfil">
+            <span class="hs-streak" id="hsStreak" title="Dias seguidos praticando"></span>
+            <span class="hs-stars" id="hsStars" title="Estrelas ganhas"></span>
+          </button>
           <div class="home-actions">
+            <button id="btnProfile" type="button" class="icon-circle small ghost" aria-label="Perfil e medalhas" title="Perfil e medalhas"><svg class="ico" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.8 20c.9-3.6 3.8-5.6 7.2-5.6s6.3 2 7.2 5.6"/></svg></button>
             <button id="btnFree" type="button" class="icon-circle small ghost" aria-label="Modo livre" title="Modo livre"><svg class="ico" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg></button>
             <button id="btnRanking" type="button" class="icon-circle small ghost" aria-label="Ranking" title="Ranking"><svg class="ico" viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20.5h8M12 16.5v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5.5h2.5v1.5a3 3 0 0 1-3 3M7 5.5H4.5v1.5a3 3 0 0 0 3 3"/></svg></button>
             <button id="btnFullscreen" type="button" class="icon-circle small ghost" aria-label="Tela cheia" title="Tela cheia"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -268,6 +274,39 @@
         </div>
       </div>
 
+      <!-- Perfil: nome, cor, tema, números e medalhas (gamificacao.js). Tudo fica só neste navegador. -->
+      <div class="overlay-card wide profile-card" id="screen-profile" hidden>
+        <h1>Seu perfil</h1>
+        <div class="profile-grid">
+          <label class="profile-field">
+            <span class="setup-label">Nome</span>
+            <input type="text" id="profileName" maxlength="20" placeholder="Como quer ser chamado?" autocomplete="off">
+          </label>
+          <div class="profile-field">
+            <span class="setup-label">Cor</span>
+            <div class="swatches" id="profileAccent" role="radiogroup" aria-label="Cor de destaque">
+              <button type="button" class="swatch" data-accent="azul" role="radio" aria-label="Azul" title="Azul"></button>
+              <button type="button" class="swatch" data-accent="verde" role="radio" aria-label="Verde" title="Verde"></button>
+              <button type="button" class="swatch" data-accent="laranja" role="radio" aria-label="Laranja" title="Laranja"></button>
+              <button type="button" class="swatch" data-accent="rosa" role="radio" aria-label="Rosa" title="Rosa"></button>
+            </div>
+          </div>
+          <div class="profile-field">
+            <span class="setup-label">Tema</span>
+            <div class="segmented" id="profileTheme" role="radiogroup" aria-label="Tema">
+              <button type="button" data-theme-opt="escuro" role="radio">Escuro</button>
+              <button type="button" data-theme-opt="claro" role="radio">Claro</button>
+            </div>
+          </div>
+        </div>
+        <div class="complete-stats" id="profileStats"></div>
+        <h2 class="profile-sub">Medalhas</h2>
+        <div class="medal-grid" id="medalGrid"></div>
+        <div class="menu-buttons">
+          <button id="btnProfileBack" type="button" class="primary">Voltar às fases</button>
+        </div>
+      </div>
+
       <!-- Primeira música guiada (parte 2 de "Primeiros passos"): um cartão antes de cada
            etapa — ouvir (demonstração), tocar sem pressa (modo espera), tocar no ritmo devagar —
            e um último que apresenta as funções do jogo. Preenchido por showGuide() em main.js. -->
@@ -296,6 +335,7 @@
       <div class="overlay-card wide" id="screen-complete" hidden>
         <span class="record-badge" id="recordBadge" hidden>Novo recorde!</span>
         <h1 id="completeTitle">Fase completa!</h1>
+        <div class="complete-stars" id="completeStars" aria-live="polite"></div>
         <div class="complete-stats" id="completeStats"></div>
         <p class="complete-summary" id="completeSummary"></p>
         <button id="btnReportToggle" type="button" class="report-toggle ghost" aria-expanded="false">Ver detalhes</button>
@@ -358,6 +398,9 @@
 <script src="songs.js"></script>
 <script src="render.js"></script>
 <script src="input.js"></script>
+<!-- Aviso de medalha nova: aparece no topo por alguns segundos. -->
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script src="gamificacao.js"></script>
 <script src="main.js"></script>
 </body>
 </html>

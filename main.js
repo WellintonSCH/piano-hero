@@ -165,6 +165,17 @@
     el.screenRanking = document.getElementById('screen-ranking');
     el.screenComplete = document.getElementById('screen-complete');
     el.screenGuide = document.getElementById('screen-guide');
+    el.screenProfile = document.getElementById('screen-profile');
+    el.profileName = document.getElementById('profileName');
+    el.profileAccent = document.getElementById('profileAccent');
+    el.profileTheme = document.getElementById('profileTheme');
+    el.profileStats = document.getElementById('profileStats');
+    el.medalGrid = document.getElementById('medalGrid');
+    el.homeStatus = document.getElementById('homeStatus');
+    el.hsStreak = document.getElementById('hsStreak');
+    el.hsStars = document.getElementById('hsStars');
+    el.toast = document.getElementById('toast');
+    el.completeStars = document.getElementById('completeStars');
     el.guideStep = document.getElementById('guideStep');
     el.guideTitle = document.getElementById('guideTitle');
     el.guideResult = document.getElementById('guideResult');
@@ -415,6 +426,8 @@
 
     // Volta com as mesmas opções da última partida (salvas a cada mudança, ver loadProgress()).
     progress = loadProgress();
+    applyLook();
+    initProfile();
     state.effects = progress.prefs.effects;
     state.hint = progress.prefs.hint;
     el.hint.checked = state.hint;
@@ -518,6 +531,7 @@
     el.screenComplete.hidden = name !== 'complete';
     el.screenIntro.hidden = name !== 'intro';
     el.screenGuide.hidden = name !== 'guide';
+    el.screenProfile.hidden = name !== 'profile';
     el.screenPause.hidden = name !== 'pause';
     el.overlay.hidden = false;
     // Pausa "de vídeo": fundo quase transparente, dá pra ver as notas paradas no palco
@@ -633,11 +647,13 @@
         ' aria-label="' + (listen ? 'Tocar junto' : 'Fase ' + (i + 1)) + ': ' + song.title + '">' +
         '<span class="map-num">' + (listen ? '&#9835;' : i + 1) + '</span>' +
         (best ? '<span class="map-best">' + best.accuracy + '%</span>' : '') +
+        (best ? starsHTML(progress.stars[song.id] || 0, 'map-stars') : '') +
         '</button>' +
         '<span class="map-label">' + song.title + '</span>' +
         '</div></div>';
     }
     el.levelList.innerHTML = html;
+    renderHomeStatus();
 
     var bubbles = el.levelList.querySelectorAll('.map-bubble');
     for (var j = 0; j < bubbles.length; j++) {
@@ -1306,6 +1322,111 @@
    * a última tentativa e os recordes de precisão/velocidade de cada fase, e as opções da
    * última partida (cada uma salva assim que muda) — reabrir o jogo volta igual.
    */
+  /* ---------------- perfil, tema e gamificação (tela) ----------------
+   * A lógica de estrelas/medalhas/sequência fica em gamificacao.js; aqui só a tela: mapa,
+   * fim de fase, aviso de medalha (#toast) e o perfil (#screen-profile). O tema e a cor de
+   * destaque mudam variáveis CSS (html[data-theme], html[data-accent]) e a paleta do canvas.
+   */
+  var ACCENTS = {
+    azul:    { a: '#6f9bff', a2: '#547bfa', note: ['#8fb4ff', '#4a6fe0'] },
+    verde:   { a: '#34c98a', a2: '#22a873', note: ['#7fe3b6', '#2a9f6f'] },
+    laranja: { a: '#ff9a4d', a2: '#f07a24', note: ['#ffc08f', '#e07028'] },
+    rosa:    { a: '#ff6fa8', a2: '#f04d8c', note: ['#ffa6c8', '#d9467f'] }
+  };
+  var STAR_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z" fill="currentColor"/></svg>';
+
+  function applyLook() {
+    var pr = progress.profile;
+    document.documentElement.setAttribute('data-theme', pr.theme === 'claro' ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-accent', pr.accent);
+    if (PH.render.setPalette) PH.render.setPalette({ light: pr.theme === 'claro', note: ACCENTS[pr.accent].note });
+  }
+
+  function starsHTML(n, cls) {
+    var h = '<span class="stars ' + (cls || '') + '" aria-label="' + n + ' de 3 estrelas">';
+    for (var i = 0; i < 3; i++) h += '<span class="star' + (i < n ? ' on' : '') + '">' + STAR_SVG + '</span>';
+    return h + '</span>';
+  }
+
+  function renderHomeStatus() {
+    var sm = PH.gami.summary(progress);
+    el.hsStreak.textContent = sm.streak ? sm.streak + (sm.streak === 1 ? ' dia' : ' dias') : '';
+    el.hsStreak.hidden = !sm.streak;
+    el.hsStars.innerHTML = STAR_SVG + '<b>' + sm.stars + '</b>';
+    el.homeStatus.setAttribute('aria-label', 'Perfil: ' + sm.stars + ' estrelas' + (sm.streak ? ', ' + sm.streak + ' dias seguidos' : ''));
+  }
+
+  var toastQueue = [], toastBusy = false;
+  function toastMedals(list) {
+    (list || []).forEach(function (m) { toastQueue.push(m); });
+    if (!toastBusy) nextToast();
+  }
+  function nextToast() {
+    var m = toastQueue.shift();
+    if (!m) { toastBusy = false; el.toast.hidden = true; return; }
+    toastBusy = true;
+    el.toast.innerHTML = '<span class="medal-ico on" aria-hidden="true">' + medalSVG() + '</span>' +
+      '<span><small>Nova medalha</small><b>' + m.name + '</b></span>';
+    el.toast.hidden = false;
+    el.toast.classList.remove('show'); void el.toast.offsetWidth; el.toast.classList.add('show');
+    setTimeout(nextToast, 2800);
+  }
+  function medalSVG() {
+    return '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 2.5h3l1 4-2.6 1.2zM16 2.5h-3l-1 4 2.6 1.2z" fill="currentColor" opacity=".55"/>' +
+      '<circle cx="12" cy="14.5" r="6.5" fill="currentColor"/><path d="M12 10.8l1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4z" fill="var(--panel, #141829)"/></svg>';
+  }
+
+  function showProfile() {
+    var pr = progress.profile;
+    el.profileName.value = pr.name;
+    syncProfileButtons();
+    var sm = PH.gami.summary(progress);
+    el.profileStats.innerHTML =
+      '<div class="stat"><span>Estrelas</span><strong>' + sm.stars + '</strong></div>' +
+      '<div class="stat"><span>Fases concluídas</span><strong>' + sm.completed + '</strong></div>' +
+      '<div class="stat"><span>Dias seguidos</span><strong>' + sm.streak + '</strong></div>' +
+      '<div class="stat"><span>Melhor sequência</span><strong>' + sm.bestStreak + '</strong></div>';
+    el.medalGrid.innerHTML = sm.medals.map(function (m) {
+      return '<div class="medal' + (m.at ? ' on' : '') + '">' +
+        '<span class="medal-ico' + (m.at ? ' on' : '') + '" aria-hidden="true">' + medalSVG() + '</span>' +
+        '<span class="medal-txt"><b>' + m.name + '</b><small>' + m.desc + '</small></span></div>';
+    }).join('');
+    showScreen('profile');
+  }
+
+  function syncProfileButtons() {
+    var pr = progress.profile;
+    [].forEach.call(el.profileAccent.children, function (b) {
+      var on = b.getAttribute('data-accent') === pr.accent;
+      b.classList.toggle('active', on); b.setAttribute('aria-checked', String(on));
+    });
+    [].forEach.call(el.profileTheme.children, function (b) {
+      var on = b.getAttribute('data-theme-opt') === pr.theme;
+      b.classList.toggle('active', on); b.setAttribute('aria-checked', String(on));
+    });
+  }
+
+  function initProfile() {
+    el.btnProfileBack = document.getElementById('btnProfileBack');
+    document.getElementById('btnProfile').addEventListener('click', showProfile);
+    el.homeStatus.addEventListener('click', showProfile);
+    el.btnProfileBack.addEventListener('click', showHome);
+    el.profileName.addEventListener('input', function () {
+      progress.profile.name = el.profileName.value.trim().slice(0, 20);
+      saveProgressState();
+    });
+    el.profileAccent.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-accent]'); if (!b) return;
+      progress.profile.accent = b.getAttribute('data-accent');
+      saveProgressState(); applyLook(); syncProfileButtons();
+    });
+    el.profileTheme.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-theme-opt]'); if (!b) return;
+      progress.profile.theme = b.getAttribute('data-theme-opt');
+      saveProgressState(); applyLook(); syncProfileButtons();
+    });
+  }
+
   function loadProgress() {
     var p = {};
     try { p = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}') || {}; } catch (e) { p = {}; }
@@ -1318,7 +1439,19 @@
       last: p.last || {},
       records: p.records || {},
       intro: p.intro || null,
-      guide: p.guide || null,   // primeira música guiada (parte 2 da introdução) concluída?   // introdução "Primeiros passos" concluída?
+      guide: p.guide || null,   // primeira música guiada (parte 2 da introdução) concluída?
+      // Gamificação (gamificacao.js): estrelas por fase, medalhas, sequência de dias, tentativas.
+      stars: p.stars || {},
+      medals: p.medals || {},
+      streak: p.streak || { days: 0, best: 0, last: null },
+      attempts: p.attempts || 0,
+      // Perfil: nome, cor de destaque e tema (escuro/claro).
+      profile: {
+        name: (p.profile && typeof p.profile.name === 'string') ? p.profile.name.slice(0, 20) : '',
+        // lista literal: loadProgress() também roda antes de ACCENTS existir (topo do módulo)
+        accent: (p.profile && ['azul', 'verde', 'laranja', 'rosa'].indexOf(p.profile.accent) !== -1) ? p.profile.accent : 'azul',
+        theme: p.profile && p.profile.theme === 'claro' ? 'claro' : 'escuro'
+      },
       prefs: {
         bpm: pr.bpm || {},   // BPM escolhido por fase (id → BPM)
         effects: bool(pr.effects, true),
@@ -1875,8 +2008,9 @@
     if (acc != null) el.guideResult.textContent = 'Precisão: ' + acc + '%';
     el.btnGuideGo.textContent = g.go;
     document.getElementById('btnGuideSkip').hidden = i === GUIDE_STEPS.length - 1;   // no fim os dois iriam ao mapa
-    if (i === GUIDE_STEPS.length - 1) {
+    if (i === GUIDE_STEPS.length - 1 && !progress.guide) {
       progress.guide = { done: true, date: Date.now() };
+      toastMedals(PH.gami.recordTutorial(progress));
       saveProgressState();
     }
     showScreen('guide');
@@ -2349,6 +2483,11 @@
     setReportExpanded(false);
     // Depois do Modo espera, o próximo passo natural é a mesma música no ritmo; senão, a
     // próxima fase. "Voltar à música" e "Repetir" ficam sempre.
+    var gam = PH.gami.recordAttempt(progress, { songId: id, accuracy: acc, wait: state.waitMode, bestCombo: state.bestCombo });
+    saveProgressState();
+    el.completeStars.innerHTML = starsHTML(gam.stars, 'big') +
+      (gam.improved && gam.stars > 0 ? '<small>Nova marca nesta fase!</small>' : '');
+    toastMedals(gam.medals);
     if (state.guide) {   // primeira música guiada: o próximo cartão no lugar da tela de fim
       showGuide(state.waitMode ? 2 : 3, acc);
       return;

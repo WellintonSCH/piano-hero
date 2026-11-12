@@ -53,8 +53,13 @@ window.PianoHero = window.PianoHero || {};
   }
 
   function initKeyboard() {
+    // Digitando num campo de texto (ex.: nome no perfil), as letras não são teclas de piano.
+    function typing(e) {
+      var t = e.target;
+      return !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && t.type !== 'checkbox' && t.type !== 'range');
+    }
     window.addEventListener('keydown', function (e) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || typing(e)) return;
       var ch = e.key.toLowerCase();
       if (!(ch in KEY_MAP)) return;
       e.preventDefault();

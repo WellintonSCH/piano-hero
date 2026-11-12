@@ -92,3 +92,5 @@ A nota vale em qualquer oitava. Depois de um erro, o texto diz qual tecla foi to
 - Hot Cross Buns (primeira música) passou de 96 para 72 BPM.
 - Removidos o dedilhado sugerido por nota e a prática de uma mão só (com a outra tocando sozinha): o dedilhado automático não funcionava de forma confiável.
 - Primeiros passos ganhou uma parte 2, a primeira música guiada: Hot Cross Buns em três etapas (ouvir na demonstração, tocar no modo espera, tocar no ritmo a 56 BPM), com um cartão explicando cada etapa e um cartão final com as funções do jogo.
+- Gamificação: estrelas por fase (1 a 3 pela precisão no ritmo; 1 no modo espera), 8 medalhas com aviso na hora, sequência de dias seguidos e total de estrelas no mapa.
+- Perfil: nome, cor de destaque (azul, verde, laranja, rosa) e tema escuro ou claro, com estatísticas e medalhas.
