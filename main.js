@@ -532,6 +532,9 @@
     // Na pausa ela continua visível, pra dar pra voltar/avançar antes de retomar.
     el.scrubberItem.hidden = !(state.mode === 'song' && name === 'pause');
     el.vScrub.hidden = el.scrubberItem.hidden;
+    // Trocar de tela (mapa, fim de fase...) não é "fechar as opções para voltar a tocar":
+    // não deixa o setOptionsOpen(false) abaixo retomar a música.
+    if (name !== 'pause') state.pausedByOptions = false;
     setOptionsOpen(false);   // evita o menu de opções ficar flutuando por cima da tela nova
   }
 
@@ -1211,9 +1214,22 @@
 
   /* ---------------- menu de opções ---------------- */
 
+  /**
+   * Abrir o ⚙ Opções no meio de uma música pausa o jogo (não faz sentido as notas passarem
+   * enquanto o jogador mexe nas opções); fechar retoma, com o rebobinar + 3-2-1 de sempre.
+   * Só retoma se foi o próprio menu que pausou e o jogo continua na pausa.
+   */
   function setOptionsOpen(open) {
+    if (open && el.optionsPanel.hidden && state.mode === 'song' && state.running && !state.paused) {
+      pauseGame();                     // showScreen('pause') fecha o painel; abre de novo abaixo
+      state.pausedByOptions = true;
+    }
     el.optionsPanel.hidden = !open;
     el.optionsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (!open && state.pausedByOptions) {
+      state.pausedByOptions = false;
+      if (state.paused && !el.screenPause.hidden) resumeGame();
+    }
   }
 
   /* ---------------- pausa ---------------- */
