@@ -308,7 +308,16 @@ button.ghost:hover { color: var(--text); }
 
 /* ---------- Painel de latência ---------- */
 
+/* Flutua no canto, por cima do jogo: antes ficava entre a HUD e o palco e crescia a cada
+   amostra, empurrando o palco para baixo e cortando o teclado. */
 .latency-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  width: min(330px, calc(100vw - 32px));
+  max-height: 55vh;
+  overflow-y: auto;
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -837,6 +846,11 @@ button.ghost:hover { color: var(--text); }
 .midi-status {
   font-size: 12px;
   margin-bottom: 0;
+  /* Sempre uma linha: se quebrasse, a altura abaixo do palco mudaria a cada nota MIDI e o
+     teclado "pularia". */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Lista de fases ---------- */
@@ -1037,6 +1051,12 @@ button.ghost:hover { color: var(--text); }
 
 .feedback {
   display: inline-block;
+  /* Altura fixa, com ou sem texto: senão o rodapé cresce a cada "Acertou!", a altura que
+     sobra para o palco muda e o teclado pula. */
+  box-sizing: border-box;
+  min-height: 30px;
+  line-height: 20px;
+  vertical-align: top;
   font-size: 15px;
   font-weight: 700;
   padding: 5px 14px;
