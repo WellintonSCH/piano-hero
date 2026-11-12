@@ -1,5 +1,6 @@
 // Desempenho de renderizacao: custo da funcao de desenho e intervalo entre quadros,
-// com CPU normal e 4x mais lenta (emulacao do Chrome). Uso: node render.js
+// com CPU normal e 4x mais lenta (emulacao do Chrome), na demonstracao de "Für Elise (tema
+// inicial)", a musica mais densa do repertorio, repetida em laco durante 20 s. Uso: node render.js
 const puppeteer = require('puppeteer-core');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
@@ -7,10 +8,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const out = {};
   for (const thr of [1, 4]) {
     const p = await b.newPage(); await p.setViewport({ width: 1280, height: 860 });
-    await p.goto('http://localhost:8765/', { waitUntil: 'networkidle0' }); await sleep(1200);
+    await p.goto('http://localhost:8765/?debug', { waitUntil: 'networkidle0' }); await sleep(1200);
     const ids = await p.evaluate(() => PianoHero.songs.map(s => s.id));
-    const bs = await p.$$('.map-bubble:not(.intro)'); await bs[ids.indexOf('bumblebee')].click(); await sleep(700);
-    await p.click('#btnPlayDemo'); await sleep(4000);
+    const bs = await p.$$('.map-bubble:not(.intro)'); await bs[ids.indexOf('furelise')].click(); await sleep(700);
+    await p.click('#btnPlayDemo'); await p.evaluate(() => { const s = PianoHero.debugState; s.loopAFrac = 0; s.loopBFrac = 1; s.loopEnabled = true; }); await sleep(4000);
     const cdp = await p.target().createCDPSession(); await cdp.send('Emulation.setCPUThrottlingRate', { rate: thr });
     out['x' + thr] = await p.evaluate(() => new Promise(r => {
       const d = [], f = []; const orig = PianoHero.render.draw;
