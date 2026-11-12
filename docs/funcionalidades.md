@@ -94,3 +94,6 @@ A nota vale em qualquer oitava. Depois de um erro, o texto diz qual tecla foi to
 - Primeiros passos ganhou uma parte 2, a primeira música guiada: Hot Cross Buns em três etapas (ouvir na demonstração, tocar no modo espera, tocar no ritmo a 56 BPM), com um cartão explicando cada etapa e um cartão final com as funções do jogo.
 - Gamificação: estrelas por fase (1 a 3 pela precisão no ritmo; 1 no modo espera), 8 medalhas com aviso na hora, sequência de dias seguidos e total de estrelas no mapa.
 - Perfil: nome, cor de destaque (azul, verde, laranja, rosa) e tema escuro ou claro, com estatísticas e medalhas.
+- Repetir trecho: a cada volta, contagem 3-2-1 e 3 s de entrada; as notas depois do fim do trecho não aparecem.
+- Primeiros passos com 7 passos (inclui Lá e Si e a oitava inteira).
+- Andamentos reduzidos: a maioria das músicas entre 80 e 100 BPM (Brilha Brilha continua a 100 BPM, usada nos testes).

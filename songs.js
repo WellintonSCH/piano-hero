@@ -298,7 +298,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'mary',
       title: 'Maria Tinha um Carneirinho',
       subtitle: 'Mary Had a Little Lamb',
-      bpm: 108,
+      bpm: 84,
       timeSignature: [4, 4],
       notes: mary.notes,
       durations: mary.durations
@@ -307,7 +307,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'londonbridge',
       title: 'A Ponte de Londres',
       subtitle: 'London Bridge Is Falling Down',
-      bpm: 108,
+      bpm: 84,
       timeSignature: [4, 4],
       notes: londonbridge.notes,
       durations: londonbridge.durations
@@ -316,7 +316,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'frere',
       title: 'Irmão Jorge',
       subtitle: 'Frère Jacques',
-      bpm: 104,
+      bpm: 80,
       timeSignature: [4, 4],
       notes: frere.notes,
       durations: frere.durations
@@ -325,7 +325,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'row',
       title: 'Reme, Reme o Barquinho',
       subtitle: 'Row, Row, Row Your Boat',
-      bpm: 100,
+      bpm: 80,
       timeSignature: [4, 4],
       notes: row.notes,
       durations: row.durations
@@ -343,7 +343,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'birthday',
       title: 'Parabéns pra Você',
       subtitle: 'Happy Birthday (versão simplificada)',
-      bpm: 112,
+      bpm: 88,
       timeSignature: [3, 4],
       notes: birthday.notes,
       durations: birthday.durations
@@ -352,7 +352,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'ode',
       title: 'Ode à Alegria',
       subtitle: 'Beethoven — Ode to Joy',
-      bpm: 112,
+      bpm: 88,
       timeSignature: [4, 4],
       notes: ode.notes,
       durations: ode.durations
@@ -361,7 +361,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'hanschen',
       title: 'Hänschen Klein',
       subtitle: 'canção folclórica alemã — só 5 notas',
-      bpm: 108,
+      bpm: 84,
       timeSignature: [4, 4],
       notes: hanschen.notes,
       durations: hanschen.durations
@@ -370,7 +370,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'lobato',
       title: 'Seu Lobato Tinha um Sítio',
       subtitle: 'Old MacDonald — ia, ia, ô',
-      bpm: 112,
+      bpm: 88,
       timeSignature: [4, 4],
       notes: lobato.notes,
       durations: lobato.durations
@@ -379,7 +379,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'saints',
       title: 'When the Saints',
       subtitle: 'spiritual tradicional — Oh When the Saints Go Marching In',
-      bpm: 120,
+      bpm: 92,
       timeSignature: [4, 4],
       notes: saints.notes,
       durations: saints.durations
@@ -388,7 +388,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'brahms',
       title: 'Canção de Ninar',
       subtitle: 'Brahms — Wiegenlied, em 3/4',
-      bpm: 96,
+      bpm: 80,
       timeSignature: [3, 4],
       notes: brahms.notes,
       durations: brahms.durations
@@ -397,7 +397,7 @@ window.PianoHero = window.PianoHero || {};
       id: 'jingle',
       title: 'Jingle Bells',
       subtitle: 'fase bônus — mais rápida',
-      bpm: 128,
+      bpm: 100,
       timeSignature: [4, 4],
       notes: jingle.notes,
       durations: jingle.durations
