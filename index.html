@@ -268,12 +268,26 @@
         </div>
       </div>
 
+      <!-- Primeira música guiada (parte 2 de "Primeiros passos"): um cartão antes de cada
+           etapa — ouvir (demonstração), tocar sem pressa (modo espera), tocar no ritmo devagar —
+           e um último que apresenta as funções do jogo. Preenchido por showGuide() em main.js. -->
+      <div class="overlay-card wide guide-card" id="screen-guide" hidden>
+        <span class="guide-step" id="guideStep"></span>
+        <h1 id="guideTitle"></h1>
+        <p class="guide-result" id="guideResult" hidden></p>
+        <div class="guide-text" id="guideText"></div>
+        <div class="menu-buttons">
+          <button id="btnGuideGo" type="button" class="primary"></button>
+          <button id="btnGuideSkip" type="button" class="ghost">Pular para as fases</button>
+        </div>
+      </div>
+
       <div class="overlay-card wide" id="screen-intro" hidden>
         <h1>Você já conhece o teclado!</h1>
-        <p class="complete-summary">Dó, Ré, Mi, Fá e Sol: são as notas da primeira música.</p>
+        <p class="complete-summary">Dó, Ré, Mi, Fá e Sol: são as notas da primeira música. Agora vamos tocá-la juntos, em três etapas.</p>
         <div class="complete-stats" id="introStats"></div>
         <div class="menu-buttons">
-          <button id="btnIntroFirstSong" type="button" class="primary">Primeira música ▶</button>
+          <button id="btnIntroFirstSong" type="button" class="primary">Continuar: primeira música ▶</button>
           <button id="btnIntroRepeat" type="button">Repetir</button>
           <button id="btnIntroToLevels" type="button" class="ghost">Fases</button>
         </div>
