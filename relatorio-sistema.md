@@ -4,14 +4,14 @@
 
 **Piano Hero**: um jogo de ritmo estilo Guitar Hero rodando 100% no navegador, em **vanilla JS puro** (sem framework, sem build tool, sem backend). Notas caem na tela até uma linha de acerto; o jogador toca a nota certa via **piano MIDI real**, **teclado do PC** ou **clique/toque** no teclado desenhado. Funciona no PC e no celular (paisagem, instalável como app pela tela inicial).
 
-O sistema foi além do MVP descrito no `prompt.md` (que pedia só notas soltas, sem ritmo): hoje tem um **motor de ritmo completo** com timeline em ticks, BPM, janelas de acerto, acordes e prática por mão.
+O sistema foi além do MVP descrito no `prompt.md` (que pedia só notas soltas, sem ritmo): hoje tem um **motor de ritmo completo** com timeline em ticks, BPM, janelas de acerto, acordes e introdução guiada.
 
 ## 2. Arquitetura
 
 Sete módulos principais, carregados por `<script>` em ordem de dependência, todos pendurados num único namespace global (`window.PianoHero`), comunicando a entrada por `CustomEvent`s no `window`:
 
 ```
-audio.js → notes.js → songs.js → fingering.js → render.js → input.js → main.js
+audio.js → notes.js → songs.js → render.js → input.js → main.js
 ```
 
 | Módulo | Responsabilidade | Destaques técnicos |
@@ -20,7 +20,6 @@ audio.js → notes.js → songs.js → fingering.js → render.js → input.js �
 | `audio.js` | Motor de áudio | 25 amostras reais (Dó3–Dó5) via `decodeAudioData`; sustain até soltar a tecla + release exponencial imitando o abafador; notas fora da faixa usam a amostra mais próxima com `playbackRate` (até 1 oitava) ou oscilador sintetizado. Barramento separado para o piano (permite silenciá-lo e tocar num instrumento externo). |
 | `notes.js` | Vocabulário musical | MIDI ↔ nome de nota, teclado desenhado de 5 oitavas (1 no celular), faixa ajustável por música, pools de dificuldade do modo livre. |
 | `songs.js` + `songs/*.json` | Repertório | 15 músicas embutidas + 6 importadas (JSON), timing em **ticks inteiros (PPQ 480)** como num arquivo MIDI. Músicas novas entram só soltando um JSON em `songs/` (gerado de MusicXML por `tools/mxl_to_song.py`), sem mexer no código. |
-| `fingering.js` | Mão e dedo de cada nota | Lê o dedilhado do JSON (`R1`..`R5`, `L1`..`L5`) ou sugere um automaticamente (mão direita por padrão, esquerda só quando a direita não alcança; dedos por "posição" da frase). Mesmo código roda no navegador e no Node. |
 | `render.js` | Renderização | Canvas 2D ciente de DPI, geometria do teclado calculada, barras com comprimento proporcional à duração, partículas de acerto, ajuste à altura real da tela no celular. |
 | `main.js` | Estado e orquestração | Modos livre e fase, loop `requestAnimationFrame` com `dt` limitado (efeitos) e `rawDt` sem limite (relógio musical), pontuação por janela de acerto (±0,25 s, adiantado no máximo metade do intervalo desde a nota anterior; perfeito ±0,08 s), pausa/retomada com contagem 3-2-1, persistência em `localStorage`, relatório pós-fase. |
 
@@ -36,10 +35,9 @@ audio.js → notes.js → songs.js → fingering.js → render.js → input.js �
 - **Mapa de fases** horizontal, com progresso, ranking top-5 por fase e recordes de precisão e de velocidade.
 - **Três formas de jogar cada fase:** normal (com janela de tempo), **modo espera** (a música para na nota até o jogador acertar) e **demonstração** (a música toca sozinha para o jogador ouvir antes).
 - **Velocidade em qualquer BPM**, lembrada por música.
-- **Prática por mão:** o jogador escolhe direita, esquerda ou as duas; a outra mão toca sozinha no tempo certo. O relatório final mostra o acerto de cada mão.
 - **Repetição de trecho (loop)** marcada direto na linha do tempo da música.
 - **Pausa estilo player de vídeo:** tocar na área das notas pausa; arrastar a pista ou a barra lateral navega na música; ao continuar, a música rebobina 3 s e faz 3-2-1.
-- **Relatório pós-fase:** perfeitos/bons/erros, tendência de adiantar ou atrasar, notas mais erradas, acerto por mão.
+- **Relatório pós-fase:** perfeitos/bons/erros, tendência de adiantar ou atrasar, notas mais erradas.
 - **Celular:** modo paisagem em tela cheia, teclado de 1 oitava, músicas maiores como "tocar junto" (só demonstração).
 
 ## 4. Avaliação
@@ -52,6 +50,5 @@ audio.js → notes.js → songs.js → fingering.js → render.js → input.js �
 - Sem testes automatizados (a validação foi manual no navegador).
 - O áudio é disparado de forma síncrona no evento de entrada; um agendamento antecipado (lookahead) poderia deixar o tempo do som mais regular.
 - Web MIDI indisponível no Safari/iOS.
-- Dedilhado automático é uma sugestão heurística, não o de um editor de partituras.
 - Interface ainda pode ser simplificada com testes de usabilidade com usuários reais.
 - Editor de músicas dentro do jogo (hoje é por JSON ou conversão de MusicXML).

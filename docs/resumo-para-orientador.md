@@ -32,7 +32,7 @@ O público continua sendo o iniciante em prática individual, e o sistema contin
 | Módulo social | Perfis, comentários e compartilhamento | Não implementado |
 | Publicação e código aberto | Previstos, com licença MIT | Publicado; repositório público, ainda sem licença |
 
-Foram acrescentados itens que não estavam na proposta: prática de uma mão com a outra tocando sozinha, dedilhado por nota, modo demonstração, relatório por mão e versão para celular.
+Foram acrescentados itens que não estavam na proposta: modo demonstração e versão para celular.
 
 ## Avaliação: situação atual
 
@@ -50,7 +50,6 @@ O sistema também registra, a cada partida, acertos, erros e tendência de adian
 
 - Não há testes automatizados; a verificação foi manual no navegador.
 - O Safari e o iOS não têm Web MIDI, então funcionam só por toque.
-- O dedilhado automático é uma sugestão heurística.
 - O som é disparado no momento da entrada, sem agendamento antecipado.
 - Não houve testes com usuários.
 

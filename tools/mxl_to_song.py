@@ -40,12 +40,6 @@ COMO FUNCIONA (leia se for mexer no script)
      sobre isso em buildTimeline() no main.js.
   5. Converte de "divisions" pra ticks PPQ 480 (o mesmo de songs.js) --
      multiplica por 480/divisions.
-  6. MÃO E DEDO (`fingers`, ver fingering.js): partitura de piano tem duas pautas --
-     <staff>1</staff> = mão direita, <staff>2</staff> = mão esquerda -- e às vezes o
-     dedo marcado (<technical><fingering>3</fingering>). Isso vira "R3"/"L5"; nota
-     sem dedo marcado vira só a mão ("R"/"L"), e o jogo completa o dedo (ou rode
-     `node tools/add_fingers.js` pra gravar o dedilhado completo no JSON e revisar).
-     Partitura com uma pauta só: nada é gravado e o jogo sugere mão e dedo sozinho.
 """
 
 import argparse
@@ -261,8 +255,6 @@ def main():
         'durations': durations,
         'sustainDurations': sustain_durations
     }
-    if fingers:
-        song['fingers'] = fingers
 
     with open(args.output, 'w', encoding='utf-8') as f:
         json.dump(song, f, ensure_ascii=False, indent=2)

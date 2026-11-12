@@ -23,7 +23,6 @@ Este sistema é o artefato de implementação de um Trabalho de Conclusão de Cu
 - 21 músicas, com suporte a acordes e tempo em ticks inteiros.
 - Modos normal, espera, demonstração e livre.
 - Repetição de trecho, velocidade em qualquer BPM e metrônomo.
-- Prática de uma mão, com a outra tocando sozinha, e dedilhado por nota.
 - Pontuação, combo, ranking por fase, recordes e relatório de desempenho.
 - Versão para celular em paisagem, instalável na tela inicial.
 

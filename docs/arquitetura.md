@@ -7,7 +7,7 @@ O sistema é uma aplicação estática: HTML, CSS e JavaScript puros, sem framew
 Os scripts são carregados por `<script>` em ordem de dependência, e todos se registram em um único objeto global, `window.PianoHero`:
 
 ```
-latency.js → audio.js → notes.js → songs.js → fingering.js → render.js → input.js → main.js
+latency.js → audio.js → notes.js → songs.js → render.js → input.js → main.js
 ```
 
 ## Fluxo de dados
@@ -19,7 +19,6 @@ flowchart LR
     PT[Mouse ou toque] --> IN
     IN -- "notePlayed / noteReleased" --> MAIN[main.js]
     SONGS[songs.js e songs/*.json] --> MAIN
-    FING[fingering.js] --> MAIN
     MAIN --> AUDIO[audio.js]
     MAIN --> RENDER[render.js]
     MAIN --> LS[(localStorage)]
@@ -36,7 +35,6 @@ A entrada segue em sentido único. O `input.js` só emite eventos no `window`, e
 | `audio.js` | Carrega as amostras, toca e abafa as notas, metrônomo e som de fallback |
 | `notes.js` | Conversão entre MIDI e nome de nota, faixa do teclado e dificuldades do modo livre |
 | `songs.js` | Músicas embutidas e carregamento das músicas em `songs/*.json` |
-| `fingering.js` | Mão e dedo de cada nota, lidos do arquivo ou sugeridos por heurística |
 | `render.js` | Desenho em Canvas 2D das notas, do teclado e dos efeitos |
 | `main.js` | Estado do jogo, loop principal, pontuação, menus, progresso e relatórios |
 | `latency.js` | Instrumentação de latência e exportação de amostras |

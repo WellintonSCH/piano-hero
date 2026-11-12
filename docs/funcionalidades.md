@@ -33,7 +33,6 @@ No modo normal, a janela de acerto é de ±0,25 s, e o acerto perfeito fica em �
 
 - **Velocidade:** qualquer BPM inteiro, de 20 até o dobro do BPM original. A escolha é lembrada por música e não altera a pontuação.
 - **Repetição de trecho:** o jogador marca início e fim na linha do tempo, e o trecho repete sozinho. A marcação continua válida ao mudar a velocidade.
-- **Prática por mão:** o jogador escolhe mão direita, esquerda ou ambas, e a outra mão toca sozinha no tempo certo.
 - **Metrônomo:** clique de referência opcional.
 - **Silenciar piano:** desliga só o som do piano do jogo, para praticar em um instrumento externo.
 - **Dica:** indicação visual da tecla esperada, que pode ser desligada.
@@ -91,3 +90,4 @@ A nota vale em qualquer oitava. Depois de um erro, o texto diz qual tecla foi to
 - Repetir trecho: botões por trecho (Música toda, 1, 2, 3…) abaixo do teclado, no lugar da faixa de arrastar.
 - Primeiros passos: só a oitava do meio, com nome das notas nas teclas e o Dó central marcado; notas caem mais devagar.
 - Hot Cross Buns (primeira música) passou de 96 para 72 BPM.
+- Removidos o dedilhado sugerido por nota e a prática de uma mão só (com a outra tocando sozinha): o dedilhado automático não funcionava de forma confiável.
