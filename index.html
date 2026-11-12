@@ -59,7 +59,6 @@
       <strong id="songLabel">—</strong>
     </div>
     <span id="demoBadge" class="demo-badge" hidden>▶ Demonstração — toque junto, sem pontos</span>
-    <span id="handBadge" class="hand-badge" hidden></span>
     <div class="hud-spacer"></div>
     <div class="hud-controls">
       <!-- Voltar/avançar alguns segundos (só modo fase): no topo, longe das teclas. -->
@@ -196,17 +195,8 @@
         <p class="setup-notice" id="setupNotice" hidden></p>
         <!-- Pontuação de antes (última tentativa + recordes de precisão e de velocidade), vista antes de começar. -->
         <div class="setup-last" id="setupLast" hidden></div>
-        <!-- Organizada de cima pra baixo: escolhas (mão, velocidade) e, por último, os
+        <!-- Organizada de cima pra baixo: escolhas (velocidade) e, por último, os
              botões que começam a partida (um por modo). Ranking recolhido no fim. -->
-        <div class="setup-section" id="setupHandSection">
-          <span class="setup-label">Mão</span>
-          <div class="segmented" id="setupHand" role="radiogroup" aria-label="Mão a praticar">
-            <button type="button" data-hand="both" role="radio">Ambas</button>
-            <button type="button" data-hand="R" role="radio"><span class="hand-dot R" aria-hidden="true"></span>Direita</button>
-            <button type="button" data-hand="L" role="radio"><span class="hand-dot L" aria-hidden="true"></span>Esquerda</button>
-          </div>
-          <small class="setup-hint" id="setupHandHint"></small>
-        </div>
         <div class="setup-section">
           <span class="setup-label">Velocidade</span>
           <div class="bpm-picker">
@@ -246,8 +236,7 @@
         <p>As notas caem até a linha: toque a nota certa, na hora certa.</p>
         <ul class="how">
           <li><b>Toque/mouse:</b> toque nas teclas desenhadas</li>
-          <li><b>Mãos e dedos:</b> cada nota mostra o dedo (1 = dedão … 5 = mindinho); azul = mão direita, laranja = esquerda. Em "Como tocar" dá pra praticar uma mão só — a outra toca sozinha</li>
-          <li><b>Pontos:</b> o combo multiplica (até ×5) e a velocidade também — mais rápido vale mais (×0,5 a ×1,5)</li>
+          <li><b>Pontos:</b> o combo multiplica os pontos (até ×5); a velocidade não muda os pontos, mas vale recorde de velocidade</li>
           <li><b>Pausar:</b> toque no meio da tela, como num vídeo (ou Esc)</li>
           <li><b>Tela cheia no celular:</b> Android entra sozinho no primeiro toque (ou pelo botão ao lado do ?). No iPhone: <b>Compartilhar → Adicionar à Tela de Início</b> e abra pelo ícone — abre em tela cheia, como um app.</li>
           <li><b>Teclado do PC:</b> Z X C V B N M (1ª oitava) · Q W E R T Y U I (2ª oitava) · linha de cima (S D, G H J, 2 3, 5 6 7) = teclas pretas</li>
@@ -295,7 +284,6 @@
         <h1 id="completeTitle">Fase completa!</h1>
         <div class="complete-stats" id="completeStats"></div>
         <p class="complete-summary" id="completeSummary"></p>
-        <div class="complete-hands" id="completeHands"></div>
         <button id="btnReportToggle" type="button" class="report-toggle ghost" aria-expanded="false">Ver detalhes</button>
         <div id="completeReport" hidden></div>
         <!-- Próximo passo em destaque: depois do Modo espera, tocar no ritmo; senão, a próxima fase. -->
@@ -354,7 +342,6 @@
 <script src="audio.js"></script>
 <script src="notes.js"></script>
 <script src="songs.js"></script>
-<script src="fingering.js"></script>
 <script src="render.js"></script>
 <script src="input.js"></script>
 <script src="main.js"></script>

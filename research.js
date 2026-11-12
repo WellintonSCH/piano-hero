@@ -74,7 +74,7 @@
     close('abandonada');
     current = {
       participante: participant, inicio: nowISO(), _t0: performance.now(),
-      fase: info.songId, titulo: info.title, modo: info.mode, mao: info.hand,
+      fase: info.songId, titulo: info.title, modo: info.mode,
       bpm: info.bpm, notas: info.notes,
       notas_midi: 0, notas_teclado: 0, notas_mouse_toque: 0
     };
@@ -93,7 +93,7 @@
 
   /* ---------------- exportação ---------------- */
 
-  var COLUMNS = ['participante', 'inicio', 'fim', 'duracao_s', 'status', 'fase', 'titulo', 'modo', 'mao',
+  var COLUMNS = ['participante', 'inicio', 'fim', 'duracao_s', 'status', 'fase', 'titulo', 'modo',
     'bpm', 'notas', 'precisao', 'pontos', 'maior_combo', 'perfeitas', 'boas', 'erradas', 'perdidas', 'atrasadas',
     'desvio_medio_ms', 'desvio_abs_medio_ms', 'notas_midi', 'notas_teclado', 'notas_mouse_toque', 'tempos_passos_s'];
 

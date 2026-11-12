@@ -1,4 +1,4 @@
-// CT18: introdução guiada "Primeiros passos" no computador e no celular emulado.
+// CT17: introdução guiada "Primeiros passos" no computador e no celular emulado.
 // Uso: node introducao.js [pasta-das-capturas]
 const puppeteer = require('puppeteer-core');
 const sleep = ms => new Promise(r => setTimeout(r, ms));

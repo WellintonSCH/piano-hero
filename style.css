@@ -1590,35 +1590,6 @@ body.song-mode .hud-controls .seek-btn.hud-icon { display: inline-flex; padding:
 #completeReport[hidden] { display: none; }
 #completeReport .report { margin-top: 8px; }
 
-/* ---------- Mãos: bolinha de cor, selo "Praticando" e relatório por mão ---------- */
-
-.hand-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-.hand-dot.R { background: var(--accent); }
-.hand-dot.L { background: var(--gold); }
-.hand-badge {
-  align-self: center;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--accent-ink);
-  background: var(--accent);
-  border-radius: 999px;
-  padding: 6px 13px;
-  white-space: nowrap;
-}
-.hand-badge.hand-L { background: var(--gold); }
-.hand-badge[hidden] { display: none !important; }
-
-.complete-hands { max-width: 380px; margin: 0 auto 8px; }
-.hand-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; font-size: 13px; }
-.hand-name { flex: 0 0 120px; text-align: left; white-space: nowrap; }
-.hand-bar { flex: 1 1 auto; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
-.hand-fill { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width .9s cubic-bezier(.2, .8, .2, 1); }
-.hand-L .hand-fill { background: var(--gold); }
-.complete-hands.filled .hand-fill { width: var(--pct); }
-.hand-pct { flex: 0 0 40px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
-.hand-count { flex: 0 0 56px; text-align: right; color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
-.hand-note { margin: 4px 0 0; font-size: 12px; }
-
 /* ---------- Celular deitado: o jogo ocupa a tela inteira ---------- */
 
 @media (orientation: landscape) {

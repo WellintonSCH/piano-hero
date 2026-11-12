@@ -50,8 +50,7 @@ Cada música importada é um arquivo JSON:
   "timeSignature": [4, 4],
   "notes": [60, 64, [60, 64, 67]],
   "durations": [480, 480, 960],
-  "sustainDurations": [480, 480, 960],
-  "fingers": ["R1", "R3", ["R1", "R3", "R5"]]
+  "sustainDurations": [480, 480, 960]
 }
 ```
 
@@ -65,13 +64,6 @@ Cada música importada é um arquivo JSON:
 | `notes` | Sim | Número MIDI de cada nota; um array representa um acorde |
 | `durations` | Sim | Ticks até a próxima posição, com 480 ticks por semínima |
 | `sustainDurations` | Não | Ticks que a nota soa, em paralelo a `durations` |
-| `fingers` | Não | Mão e dedo de cada nota |
-
-### Dedilhado
-
-`R` é a mão direita e `L`, a esquerda. Os dedos vão de 1, o polegar, a 5. Assim, `R1` é o polegar direito. Um acorde recebe um array na mesma ordem das notas. Um rótulo só com a mão, como `"R"`, mantém a mão e deixa o algoritmo escolher o dedo.
-
-Sem o campo `fingers`, o `fingering.js` sugere o dedilhado: usa a mão direita por padrão e a esquerda quando a direita não alcança.
 
 ## Adicionar uma música
 
@@ -89,12 +81,6 @@ Sem o campo `fingers`, o `fingering.js` sugere o dedilhado: usa a mão direita p
 
    Para usar só algumas vozes, acrescente `--voices 1,5`.
 
-3. Complete o dedilhado para revisar à mão, se quiser:
-
-   ```
-   node tools/add_fingers.js songs/minha.json
-   ```
-
-4. Acrescente `"minha.json"` a `songs/manifest.json`.
+3. Acrescente `"minha.json"` a `songs/manifest.json`.
 
 Não é preciso alterar o código. O conversor usa só a biblioteca padrão do Python.

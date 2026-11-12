@@ -1,4 +1,4 @@
-// CT19: fim da demonstração volta à tela da música; fim do modo espera oferece "Agora no ritmo" e "Voltar à música".
+// CT18: fim da demonstração volta à tela da música; fim do modo espera oferece "Agora no ritmo" e "Voltar à música".
 // Uso: node fim-musica.js [pasta-das-capturas]
 const puppeteer = require('puppeteer-core');
 const sleep = ms => new Promise(r => setTimeout(r, ms));

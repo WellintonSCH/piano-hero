@@ -51,7 +51,7 @@ async function openSong(p, id) {
 const songData = (p, id) => p.evaluate(id => { const s = PianoHero.songs.find(x => x.id === id);
   const sh = PianoHero.notes.songShift(s) || 0;   // transposicao por oitavas aplicada pelo jogo
   const tr = n => Array.isArray(n) ? n.map(x => x + sh) : n + sh;
-  return { notes: s.notes.map(tr), durations: s.durations, bpm: s.bpm, fingers: PianoHero.fingering.forSong(s), shift: sh }; }, id);
+  return { notes: s.notes.map(tr), durations: s.durations, bpm: s.bpm, shift: sh }; }, id);
 const asArr = x => Array.isArray(x) ? x : [x];
 function onsets(song) { const spt = (60 / song.bpm) / 480; let a = 0; return song.durations.map(d => { const t = a; a += d; return t * spt; }); }
 async function playTimed(p, song, offsetMs) {
@@ -93,73 +93,56 @@ async function playTimed(p, song, offsetMs) {
   p = await open(browser); await openSong(p, 'twinkle'); await playTimed(p, tw, 450);
   res.CT12_late450 = await completeText(p); await p.close();
 
-  // CT13: pratica so da mao direita (modo espera); a mao esquerda deve tocar sozinha
-  p = await open(browser);
-  const fe = await songData(p, 'fureliseeasy');
-  await openSong(p, 'fureliseeasy');
-  await p.click('#setupHand button[data-hand="R"]'); await sleep(300);
-  await p.click('#btnPlayWait'); await sleep(3600);
-  let rCount = 0;
-  for (let i = 0; i < fe.notes.length; i++) {
-    const ns = asArr(fe.notes[i]), fs_ = asArr(fe.fingers[i]);
-    const r = ns.filter((_, k) => String(fs_[k] || 'R').startsWith('R'));
-    if (!r.length) continue; rCount += r.length;
-    await midiTap(p, r); await sleep(70);
-  }
-  res.CT13_right_notes = rCount;
-  res.CT13_hand_R = await completeText(p, 120);
-  await p.close();
-
-  // CT14: metronomo ligado durante 6 s do modo normal (100 BPM => ~10 batidas)
+  // CT13: metronomo ligado durante 6 s do modo normal (100 BPM => ~10 batidas)
   p = await open(browser); await openSong(p, 'twinkle');
   await p.evaluate(() => { const c = document.getElementById('metronomeToggle'); if (!c.checked) c.click(); });
   await p.evaluate(() => { window.__ticks = 0; const d = document.getElementById('metronomeDot');
     new MutationObserver(() => { if (d.classList.contains('tick')) window.__ticks++; }).observe(d, { attributes: true }); });
   await p.click('#btnPlayNormal'); await sleep(3000);
   await p.evaluate(() => { window.__ticks = 0; }); await sleep(6000);
-  res.CT14_metronome_ticks_6s = await p.evaluate(() => window.__ticks);
-  res.CT14_metronome_checked = await p.evaluate(() => document.getElementById('metronomeToggle').checked);
+  res.CT13_metronome_ticks_6s = await p.evaluate(() => window.__ticks);
+  res.CT13_metronome_checked = await p.evaluate(() => document.getElementById('metronomeToggle').checked);
   await p.close();
 
-  // CT15: repeticao de trecho - clicar no botao do trecho 2 e verificar que o tempo volta ao inicio dele
+  // CT14: repeticao de trecho - clicar no botao do trecho 2 e verificar que o tempo volta ao inicio dele
   p = await open(browser); await openSong(p, 'twinkle'); await p.click('#btnPlayNormal'); await sleep(3500);
-  res.CT15_chips = await p.evaluate(() => [...document.querySelectorAll('.section-chip')].map(b => b.textContent + (b.title ? ' (' + b.title + ')' : '')));
+  res.CT14_chips = await p.evaluate(() => [...document.querySelectorAll('.section-chip')].map(b => b.textContent + (b.title ? ' (' + b.title + ')' : '')));
   await p.evaluate(() => document.querySelectorAll('.section-chip')[2].click()); await sleep(200);
-  res.CT15_trecho_s = await p.evaluate(() => { const s = PianoHero.debugState || null; return s && [s.loopAFrac * s.songDuration, s.loopBFrac * s.songDuration]; });
+  res.CT14_trecho_s = await p.evaluate(() => { const s = PianoHero.debugState || null; return s && [s.loopAFrac * s.songDuration, s.loopBFrac * s.songDuration]; });
   {
     const samples = [];
     for (let i = 0; i < 60; i++) { samples.push(await p.evaluate(() => document.getElementById('vScrubTime')?.textContent || '')); await sleep(250); }
-    res.CT15_loop_samples = samples;
+    res.CT14_loop_samples = samples;
   }
   await p.close();
 
-  // CT16: persistencia - concluir uma fase, recarregar a pagina e conferir o progresso salvo
+  // CT15: persistencia - concluir uma fase, recarregar a pagina e conferir o progresso salvo
   p = await open(browser);
   await openSong(p, 'twinkle'); await p.click('#btnPlayWait'); await sleep(3600);
   for (const n of tw.notes) { await midiTap(p, asArr(n), 40); await sleep(50); }
   await completeText(p);
   const p2 = await browser.newPage(); await p2.setViewport({ width: 1280, height: 860 });
   await p2.goto(BASE, { waitUntil: 'networkidle0' }); await sleep(1200);
-  res.CT16_after_reload = await p2.evaluate(() => { const pr = JSON.parse(localStorage.getItem('pianoHeroProgress') || 'null');
+  res.CT15_after_reload = await p2.evaluate(() => { const pr = JSON.parse(localStorage.getItem('pianoHeroProgress') || 'null');
     return pr ? { best: pr.best && pr.best.twinkle, records: pr.records && pr.records.twinkle, last: pr.last && pr.last.twinkle } : null; });
   await openSong(p2, 'twinkle');
-  res.CT16_song_card = await p2.evaluate(() => document.getElementById('screen-song')?.innerText.slice(0, 600));
+  res.CT15_song_card = await p2.evaluate(() => document.getElementById('screen-song')?.innerText.slice(0, 600));
   await p2.close(); await p.close();
 
-  // CT17: celular (emulacao Pixel 5) - retrato pede para girar; paisagem joga com 1 oitava
+  // CT16: celular (emulacao Pixel 5) - retrato pede para girar; paisagem joga com 1 oitava
   const dev = puppeteer.KnownDevices;
   p = await open(browser, { device: dev['Pixel 5'] });
-  res.CT17_portrait = await p.evaluate(() => ({ compact: document.documentElement.classList.contains('compact'),
+  res.CT16_portrait = await p.evaluate(() => ({ compact: document.documentElement.classList.contains('compact'),
     rotateHintVisible: getComputedStyle(document.getElementById('rotateHint')).display !== 'none' }));
   await p.close();
   p = await open(browser, { device: dev['Pixel 5 landscape'] });
-  res.CT17_landscape = await p.evaluate(() => ({ compact: document.documentElement.classList.contains('compact'),
+  res.CT16_landscape = await p.evaluate(() => ({ compact: document.documentElement.classList.contains('compact'),
     rotateHintVisible: getComputedStyle(document.getElementById('rotateHint')).display !== 'none',
     range: [PianoHero.notes.MIN_MIDI, PianoHero.notes.MAX_MIDI] }));
   const hc = await songData(p, 'hotcross');
   await openSong(p, 'hotcross'); await p.tap('#btnPlayWait'); await sleep(3600);
   for (const n of hc.notes) { await midiTap(p, asArr(n)); await sleep(60); }
-  res.CT17_mobile_play = await completeText(p);
+  res.CT16_mobile_play = await completeText(p);
   await p.close();
 
   // Latencia sob carga: "O Voo do Besouro" em modo normal, 200 teclas, CPU normal e 4x mais lenta

@@ -16,10 +16,10 @@ virtual) e registram os resultados.
 | Comando | O que faz |
 | --- | --- |
 | `npm run funcionais` | CT1 a CT8 e a latência sem carga (teclado e mouse) |
-| `npm run complementares` | CT9 a CT17 (MIDI virtual, janela de acerto, prática por mão, metrônomo, repetição de trecho, progresso salvo, celular emulado) e a latência sob carga |
+| `npm run complementares` | CT9 a CT16 (MIDI virtual, janela de acerto, metrônomo, repetição de trecho, progresso salvo, celular emulado) e a latência sob carga |
 | `npm run janela` | Toca a música inteira adiantada ou atrasada por deslocamentos fixos, agendados pelo relógio do jogo (precisa de `?debug`), e mostra como cada toque foi classificado |
-| `npm run introducao` | CT18: introdução guiada "Primeiros passos" no computador e no celular emulado (erro, Dó em várias oitavas, luz após dois erros, tela final) |
-| `npm run fim` | CT19: fim da demonstração volta à tela da música com o Modo espera em destaque; depois do Modo espera, "Voltar à música" e "Agora no ritmo" |
+| `npm run introducao` | CT17: introdução guiada "Primeiros passos" no computador e no celular emulado (erro, Dó em várias oitavas, luz após dois erros, tela final) |
+| `npm run fim` | CT18: fim da demonstração volta à tela da música com o Modo espera em destaque; depois do Modo espera, "Voltar à música" e "Agora no ritmo" |
 | `npm run render` | Custo do desenho por quadro, com CPU normal e 4x mais lenta |
 
 `?debug` na URL expõe o estado do jogo (`PianoHero.debugState`) para os testes; sem
