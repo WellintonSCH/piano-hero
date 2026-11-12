@@ -218,6 +218,16 @@ window.PianoHero = window.PianoHero || {};
 
   var MIDDLE_C = 60;
 
+  // Paleta do canvas, trocada pelo perfil (tema claro/escuro e cor das notas) via setPalette().
+  var PAL = {
+    bg: ['#0a0c16', '#131832'], lane: 'rgba(255,255,255,.05)', note: ['#8fb4ff', '#4a6fe0']
+  };
+  function setPalette(o) {
+    PAL.bg = o.light ? ['#f4f6fb', '#e3e8f4'] : ['#0a0c16', '#131832'];
+    PAL.lane = o.light ? 'rgba(20,30,60,.07)' : 'rgba(255,255,255,.05)';
+    if (o.note) PAL.note = o.note;
+  }
+
   function roundRect(x, y, w, h, r) {
     r = Math.max(0, Math.min(r, h / 2, w / 2));   // barra curta de nota rápida: canto não "estoura"
     ctx.beginPath();
@@ -256,14 +266,14 @@ window.PianoHero = window.PianoHero || {};
 
     function drawBackground() {
       var g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, '#0a0c16');
-      g.addColorStop(1, '#131832');
+      g.addColorStop(0, PAL.bg[0]);
+      g.addColorStop(1, PAL.bg[1]);
       ctx.fillStyle = g;
       ctx.fillRect(-20, -20, W + 40, H + 40);
     }
 
     function drawLanes() {
-      ctx.strokeStyle = 'rgba(255,255,255,.05)';
+      ctx.strokeStyle = PAL.lane;
       ctx.lineWidth = 1;
       for (var i = 1; i < PH.notes.WHITE.length; i++) {
         var x = Math.round(i * layout.whiteW) + 0.5;
@@ -320,7 +330,7 @@ window.PianoHero = window.PianoHero || {};
         var h = n.len || layout.noteH;
         var y = n.y - h;
 
-        var base = k.black ? ['#b98cff', '#7d4fe0'] : ['#8fb4ff', '#4a6fe0'];
+        var base = k.black ? ['#b98cff', '#7d4fe0'] : PAL.note;
         var g = ctx.createLinearGradient(0, y, 0, y + h);
         g.addColorStop(0, base[0]);
         g.addColorStop(1, base[1]);
@@ -509,6 +519,7 @@ window.PianoHero = window.PianoHero || {};
     keyAt: keyAt,
     burst: burst,
     ring: ring,
-    draw: draw
+    draw: draw,
+    setPalette: setPalette
   };
 })(window.PianoHero);

@@ -19,10 +19,10 @@ No test suite, linter, or formatter is configured. There is no automated test co
 
 ## Architecture
 
-Eight script files loaded via plain `<script>` tags in `index.html`, in dependency order:
+Nine script files loaded via plain `<script>` tags in `index.html`, in dependency order:
 
 ```
-latency.js → research.js → audio.js → notes.js → songs.js → render.js → input.js → main.js
+latency.js → research.js → audio.js → notes.js → songs.js → render.js → input.js → gamificacao.js → main.js
 ```
 
 All modules attach to a single shared global namespace, `window.PianoHero` (aliased `PH` inside each IIFE). Each file is `(function (PH) { 'use strict'; ... })(window.PianoHero)` — there's no module system, so load order in `index.html` matters and must be preserved.
@@ -67,6 +67,10 @@ Normal mode judges a press against the pending slot with an asymmetric window: l
 The intro draws **only the middle octave** (`LESSON_MIN`–`LESSON_MAX`, Dó4–Dó5, via `PH.notes.setRange()`; `exitLesson()` resets it), labels the white keys with note names and falls slower (`LESSON_FALL_SPEED`). `render.js` always marks middle C (`middleCMark()`: a dot, plus "Dó central" when the key is wide enough).
 
 `startLesson()` in `main.js` runs a 5-step keyboard intro ("Primeiros passos", bubble 0 on the map, before phase 1) on top of free-mode mechanics: `state.lesson` holds the step, `fill()` pulls notes from `lessonSource` (the step's fixed queue, or a random draw for the last step) instead of `sequence`, and `onFreeNote()` hands off to `onLessonNote()`, which accepts the target **in any octave** (pitch class). `lessonSyncTarget()` lights every octave of the note on step 1; the banner (`#lessonBanner`) shows the instruction and, after a miss, where that key sits relative to the black-key groups. Hint follows each step's `hint` flag and turns on after two misses in a row; the user's own hint preference is saved and restored by `exitLesson()` (called from `showHome`, `startFree`, `startSong` and the lesson end). `render.js` fills the hinted key while `st.lesson` is set. Completion goes to `progress.intro`; with research mode on, the whole intro is one attempt (`modo = introducao`) with per-step times.
+
+### Gamification and profile
+
+`gamificacao.js` (`PH.gami`) holds only pure functions over `progress`: `starsFor()` (normal mode: ≥95% 3★, ≥80% 2★, ≥50% 1★; wait mode always 1★), `recordAttempt()` (called from `finishSong()`, never for demos: updates `progress.stars`, `attempts`, the day `streak` and returns new medals), `recordTutorial()` (end of the guided song) and `summary()`. Eight medals in `MEDALS`; keep the set small and practice-focused (no coins, lives or shop). `main.js` draws it: stars on map bubbles and the complete screen, a status chip on the map (`#homeStatus`: days in a row + total stars), medal toasts (`#toast`), and `#screen-profile` (name, accent color, dark/light theme, stats, medal grid). Theme/accent are `html[data-theme]`/`html[data-accent]` CSS overrides plus `PH.render.setPalette()` for the canvas (highway background, lanes, note color), applied by `applyLook()` on load and on change. `input.js` ignores keydown while typing in a text field, otherwise letters become piano notes.
 
 ### Guided first song (part 2 of the intro)
 

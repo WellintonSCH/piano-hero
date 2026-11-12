@@ -1730,3 +1730,148 @@ html.compact .lesson-tip { font-size: 12px; margin-top: 4px; }
 .guide-text p { margin: 0 0 8px; }
 .guide-tips { text-align: left; margin: 0; padding-left: 20px; }
 .guide-tips li { margin: 6px 0; }
+
+/* ======================================================================
+   Perfil: cor de destaque (html[data-accent]) e tema claro (html[data-theme=light]).
+   O tema escuro é o padrão de :root; aqui só o que muda.
+   ====================================================================== */
+
+html[data-accent="verde"]   { --accent: #34c98a; --accent-2: #22a873; }
+html[data-accent="laranja"] { --accent: #ff9a4d; --accent-2: #f07a24; }
+html[data-accent="rosa"]    { --accent: #ff6fa8; --accent-2: #f04d8c; }
+html[data-accent="verde"] button.primary,
+html[data-accent="laranja"] button.primary,
+html[data-accent="rosa"] button.primary { background: linear-gradient(180deg, var(--accent), var(--accent-2)); }
+html[data-accent="verde"] .map-bubble.current,
+html[data-accent="laranja"] .map-bubble.current,
+html[data-accent="rosa"] .map-bubble.current { background: radial-gradient(circle at 35% 30%, var(--accent), var(--accent-2)); }
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #eef1f7;
+  --bg-2: #e2e7f1;
+  --panel: #ffffff;
+  --panel-2: #f5f7fc;
+  --line: #d6dcea;
+  --line-soft: rgba(40, 60, 120, .12);
+  --text: #18203a;
+  --muted: #5b6482;
+  --muted-2: #7d86a3;
+  --shadow-sm: 0 2px 8px rgba(30, 40, 80, .10);
+  --shadow-md: 0 10px 28px rgba(30, 40, 80, .12);
+  --shadow-lg: 0 24px 60px rgba(30, 40, 80, .16);
+}
+html[data-theme="light"] body { background: linear-gradient(180deg, #f6f8fc, var(--bg)); }
+html[data-theme="light"] #stage { background: #eef1f8; }
+html[data-theme="light"] #overlay { background: radial-gradient(80% 60% at 50% 30%, rgba(246, 248, 252, .94), rgba(226, 231, 241, .96)); }
+html[data-theme="light"] #overlay.see-through { background: rgba(240, 243, 250, .35); }
+html[data-theme="light"] .overlay-card { background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(248, 250, 255, .9)); }
+html[data-theme="light"] .map-bubble { background: radial-gradient(circle at 35% 30%, #ffffff, #dfe5f3); box-shadow: 0 6px 16px rgba(30, 40, 80, .15); }
+html[data-theme="light"] .map-best { background: #fff; }
+html[data-theme="light"] #optionsBtn[aria-expanded="true"] { background: var(--panel-2); }
+html[data-theme="light"] .lesson-banner { background: rgba(255, 255, 255, .95); }
+
+/* ---------- Estrelas, status do mapa, aviso de medalha ---------- */
+
+.stars { display: inline-flex; gap: 1px; color: var(--muted-2); }
+.star { display: inline-flex; opacity: .35; }
+.star.on { color: var(--gold); opacity: 1; }
+.map-stars {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.map-stars svg { width: 13px; height: 13px; }
+.complete-stars { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 2px 0 8px; }
+.complete-stars .big svg { width: 34px; height: 34px; }
+.complete-stars .big .star.on { animation: star-pop .45s cubic-bezier(.2, 1.6, .4, 1) both; }
+.complete-stars .big .star:nth-child(2) { animation-delay: .12s; }
+.complete-stars .big .star:nth-child(3) { animation-delay: .24s; }
+.complete-stars small { color: var(--gold); font-weight: 700; }
+@keyframes star-pop { from { transform: scale(0); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .complete-stars .big .star.on { animation: none; } }
+
+.home-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  margin-right: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.hs-stars { display: inline-flex; align-items: center; gap: 4px; color: var(--gold); }
+.hs-stars b { color: var(--text); }
+.hs-streak { color: #ff8a3d; }
+.hs-streak::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #ff8a3d; box-shadow: 0 0 8px #ff8a3d; vertical-align: 1px; }
+
+.toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px 10px 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--gold);
+  box-shadow: var(--shadow-md);
+  color: var(--text);
+  transform: translate(-50%, 0);
+  pointer-events: none;
+}
+.toast.show { animation: toast-in 2.8s ease both; }
+.toast small { display: block; font-size: 11px; color: var(--muted); }
+.toast b { display: block; font-size: 14px; }
+@keyframes toast-in {
+  0% { opacity: 0; transform: translate(-50%, -14px); }
+  10%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}
+
+/* ---------- Perfil e medalhas ---------- */
+
+.profile-card { max-width: 620px; text-align: left; }
+.profile-card h1 { text-align: center; }
+.profile-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 12px 0 16px; }
+@media (min-width: 700px) { .profile-grid { grid-template-columns: 1.3fr 1fr 1fr; } }
+.profile-field { display: flex; flex-direction: column; gap: 6px; }
+.profile-field input {
+  height: 38px; padding: 0 12px; border-radius: var(--radius-md);
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font: inherit;
+}
+.swatches { display: flex; gap: 8px; }
+.swatch { width: 34px; height: 34px; padding: 0; border-radius: 50%; border: 2px solid transparent; }
+.swatch[data-accent="azul"] { background: #6f9bff; }
+.swatch[data-accent="verde"] { background: #34c98a; }
+.swatch[data-accent="laranja"] { background: #ff9a4d; }
+.swatch[data-accent="rosa"] { background: #ff6fa8; }
+.swatch.active { border-color: var(--text); box-shadow: 0 0 0 3px var(--panel), 0 0 0 5px var(--text); }
+.profile-sub { font-size: 15px; margin: 18px 0 8px; }
+.medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.medal { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--line); opacity: .55; }
+.medal.on { opacity: 1; border-color: rgba(255, 209, 88, .5); }
+.medal-txt b { display: block; font-size: 13px; }
+.medal-txt small { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+.medal-ico { display: inline-flex; color: var(--muted-2); }
+.medal-ico.on { color: var(--gold); }
+html[data-theme="light"] .overlay-card h1 {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--text);
+}
+html[data-theme="light"] .section-chip.active,
+html[data-theme="light"] .complete-stars small { color: #a26f00; }
+html[data-theme="light"] .star.on,
+html[data-theme="light"] .hs-stars,
+html[data-theme="light"] .medal-ico.on { color: #f0b400; }
+.profile-field .segmented { flex-wrap: nowrap; }
+html[data-theme="light"] .map-bubble.done { background: radial-gradient(circle at 35% 30%, #5be6b0, #1f9d6c); }
+html[data-theme="light"] .map-bubble.done .map-num { color: #fff; }
+/* Celular deitado: o status (dias/estrelas) fica compacto ao lado do título */
+html.compact .home-status { padding: 4px 8px; gap: 8px; font-size: 12px; margin-right: 4px; }
