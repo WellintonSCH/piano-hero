@@ -62,7 +62,8 @@
     loopAFrac: null,       // modo fase: início do trecho marcado pra repetir, em fração (0..1) da duração
     loopBFrac: null,       // modo fase: fim do trecho marcado pra repetir, em fração (0..1) da duração
     loopEnabled: false,    // modo fase: true = ao chegar em loopBFrac, volta pra loopAFrac automaticamente
-    loopSection: null,     // índice do trecho escolhido nos botões de "Repetir trecho" (null = música toda)
+    loopSection: null,
+    guide: null,           // primeira música guiada em andamento: { step } (ver startGuide)     // índice do trecho escolhido nos botões de "Repetir trecho" (null = música toda)
     speed: 1,              // multiplicador de velocidade (afeta o BPM efetivo da fase)
     waitMode: false,       // modo fase: true = a música pausa na nota até o jogador acertar
     metronome: false,      // modo fase: true = clique de referência em cada tempo (semínima)
@@ -163,6 +164,12 @@
     el.screenHelp = document.getElementById('screen-help');
     el.screenRanking = document.getElementById('screen-ranking');
     el.screenComplete = document.getElementById('screen-complete');
+    el.screenGuide = document.getElementById('screen-guide');
+    el.guideStep = document.getElementById('guideStep');
+    el.guideTitle = document.getElementById('guideTitle');
+    el.guideResult = document.getElementById('guideResult');
+    el.guideText = document.getElementById('guideText');
+    el.btnGuideGo = document.getElementById('btnGuideGo');
     el.screenIntro = document.getElementById('screen-intro');
     el.introStats = document.getElementById('introStats');
     el.lessonBanner = document.getElementById('lessonBanner');
@@ -227,9 +234,11 @@
     window.addEventListener('noteReleased', function (e) { onNoteReleased(e.detail); });
 
     document.getElementById('btnFree').addEventListener('click', startFree);
-    document.getElementById('btnIntroFirstSong').addEventListener('click', function () {
-      var first = availableSongs()[0];
-      if (first) showSongSetup(first);
+    document.getElementById('btnIntroFirstSong').addEventListener('click', startGuide);
+    el.btnGuideGo.addEventListener('click', onGuideGo);
+    document.getElementById('btnGuideSkip').addEventListener('click', function () {
+      state.guide = null;
+      showHome();
     });
     document.getElementById('btnIntroRepeat').addEventListener('click', startLesson);
     document.getElementById('btnIntroToLevels').addEventListener('click', showHome);
@@ -508,6 +517,7 @@
     el.screenRanking.hidden = name !== 'ranking';
     el.screenComplete.hidden = name !== 'complete';
     el.screenIntro.hidden = name !== 'intro';
+    el.screenGuide.hidden = name !== 'guide';
     el.screenPause.hidden = name !== 'pause';
     el.overlay.hidden = false;
     // Pausa "de vídeo": fundo quase transparente, dá pra ver as notas paradas no palco
@@ -528,6 +538,7 @@
   /** A tela inicial é a própria lista de fases — sempre re-renderizada (melhor % pode ter mudado). */
   function showHome() {
     exitLesson();
+    state.guide = null;
     showScreen('home');
     renderLevelList();
   }
@@ -601,15 +612,16 @@
     var html = '<svg class="map-path" aria-hidden="true"><path/></svg>';
     // Primeiros passos: antes da fase 1; enquanto não for feita, é ela a "fase atual".
     var introDone = !!(progress.intro && progress.intro.done);
+    var tutorialDone = introDone && !!progress.guide;   // as duas partes: teclado + música guiada
     html += '<div class="map-node"><div class="map-stop" style="--k:' + MAP_K[MAP_K.length - 1] + '">' +
-      '<button type="button" class="map-bubble intro' + (introDone ? ' done' : ' current') + '" data-intro="1"' +
+      '<button type="button" class="map-bubble intro' + (tutorialDone ? ' done' : ' current') + '" data-intro="1"' +
       ' aria-label="Primeiros passos: conhecer o teclado">' +
       '<span class="map-num">0</span>' +
       (introDone ? '<span class="map-best">' + progress.intro.accuracy + '%</span>' : '') +
       '</button>' +
       '<span class="map-label">Primeiros passos</span>' +
       '</div></div>';
-    if (!introDone) current = -2;   // nenhuma música fica marcada como atual antes da introdução
+    if (!tutorialDone) current = -2;   // nenhuma música fica marcada como atual antes da introdução
     for (var i = 0; i < songs.length; i++) {
       var song = songs[i];
       var best = progress.best[song.id];
@@ -629,7 +641,7 @@
 
     var bubbles = el.levelList.querySelectorAll('.map-bubble');
     for (var j = 0; j < bubbles.length; j++) {
-      bubbles[j].addEventListener('click', bubbles[j].hasAttribute('data-intro') ? startLesson : onLevelClick);
+      bubbles[j].addEventListener('click', bubbles[j].hasAttribute('data-intro') ? onIntroBubble : onLevelClick);
     }
     drawMapPath();
     var cur = el.levelList.querySelector('.map-bubble.current');
@@ -682,6 +694,7 @@
    * demonstração — `{ text, suggest: 'wait' | 'normal' }`, e o botão sugerido ganha destaque.
    */
   function showSongSetup(song, notice) {
+    state.guide = null;
     setupSong = song;
     el.setupTitle.textContent = song.title;
     el.setupSubtitle.textContent = song.subtitle || '';
@@ -1304,7 +1317,8 @@
       scores: p.scores || {},
       last: p.last || {},
       records: p.records || {},
-      intro: p.intro || null,   // introdução "Primeiros passos" concluída?
+      intro: p.intro || null,
+      guide: p.guide || null,   // primeira música guiada (parte 2 da introdução) concluída?   // introdução "Primeiros passos" concluída?
       prefs: {
         bpm: pr.bpm || {},   // BPM escolhido por fase (id → BPM)
         effects: bool(pr.effects, true),
@@ -1393,6 +1407,7 @@
 
   function startFree() {
     exitLesson();
+    state.guide = null;
     state.mode = 'free';
     state.song = null;
     setKeyboardFor(null);
@@ -1684,6 +1699,7 @@
 
   function startLesson() {
     exitLesson();
+    state.guide = null;
     state.mode = 'free';
     state.song = null;
     setKeyboardFor(null);
@@ -1794,6 +1810,90 @@
     setTimeout(function () {
       if (state.lesson === L && L.gen === gen && L.transition) loadLessonStep();
     }, LESSON_PAUSE_MS);
+  }
+
+  /* ---------------- primeira música guiada ----------------
+   * Parte 2 de "Primeiros passos": leva da localização das notas à primeira música e aos
+   * três modos, nesta ordem — ouvir (demonstração), tocar sem pressa (modo espera) e tocar no
+   * ritmo, mais devagar (modo normal a GUIDE_SLOW_BPM). Antes de cada etapa, um cartão
+   * (#screen-guide) diz o que fazer; o fim da demonstração (checkSongEnd) e o fim de cada
+   * execução (finishSong) chamam showGuide() em vez das telas de sempre enquanto
+   * `state.guide` existir. Qualquer saída (mapa, outra fase, modo livre) cancela o guia.
+   */
+  var GUIDE_SLOW_BPM = 56;
+  var GUIDE_STEPS = [
+    { step: 'Etapa 1 de 3 · Ouvir',
+      title: 'Primeira música: Hot Cross Buns',
+      text: '<p>As notas que você acabou de aprender agora viram uma música.</p>' +
+        '<p>Primeiro, <b>só ouça e veja</b>: o jogo toca sozinho. Repare que cada nota cai até a linha e soa bem quando chega nela.</p>',
+      go: 'Ouvir a música ▶', kind: 'demo' },
+    { step: 'Etapa 2 de 3 · Tocar sem pressa',
+      title: 'Agora é você',
+      text: '<p>No <b>Modo espera</b>, a música para em cada nota e só continua quando você acertar. Não existe atraso.</p>' +
+        '<p>Siga a tecla que acende em azul. Se errar, é só tentar de novo.</p>',
+      go: 'Tocar no Modo espera ▶', kind: 'wait' },
+    { step: 'Etapa 3 de 3 · No ritmo',
+      title: 'Muito bem! Agora no ritmo',
+      text: '<p>No modo normal, a música <b>não espera</b>: toque cada nota quando ela encostar na linha.</p>' +
+        '<p>Vamos mais devagar que o original. Errar algumas notas é normal na primeira vez.</p>',
+      go: 'Tocar no ritmo ▶', kind: 'normal' },
+    { step: 'Tutorial concluído',
+      title: 'Você já sabe jogar!',
+      text: '<ul class="guide-tips">' +
+        '<li><b>Pausar:</b> clique nas notas caindo, ou aperte Esc.</li>' +
+        '<li><b>Velocidade:</b> na tela de cada música, deixe mais lento ou mais rápido.</li>' +
+        '<li><b>Repetir trecho:</b> os botões numerados embaixo do teclado repetem uma parte difícil.</li>' +
+        '<li><b>⚙ Opções:</b> metrônomo, luz de ajuda e outras opções.</li>' +
+        '<li><b>Caminho sugerido</b> para cada música nova: Demonstração → Modo espera → Jogar.</li>' +
+        '</ul>',
+      go: 'Ir para as fases ▶', kind: 'home' }
+  ];
+
+  function guideSong() { return availableSongs()[0]; }
+
+  /** Bolha 0 do mapa: refaz a localização das notas, ou retoma a música guiada se só ela falta. */
+  function onIntroBubble() {
+    if (progress.intro && progress.intro.done && !progress.guide) startGuide();
+    else startLesson();
+  }
+
+  function startGuide() {
+    if (!guideSong()) { showHome(); return; }
+    exitLesson();
+    state.guide = { step: 0 };
+    showGuide(0);
+  }
+
+  /** Mostra o cartão da etapa `i`; `acc` = precisão da execução que acabou de terminar. */
+  function showGuide(i, acc) {
+    var g = GUIDE_STEPS[i];
+    state.guide = { step: i };
+    el.guideStep.textContent = g.step;
+    el.guideTitle.textContent = g.title;
+    el.guideText.innerHTML = g.text;
+    el.guideResult.hidden = acc == null;
+    if (acc != null) el.guideResult.textContent = 'Precisão: ' + acc + '%';
+    el.btnGuideGo.textContent = g.go;
+    document.getElementById('btnGuideSkip').hidden = i === GUIDE_STEPS.length - 1;   // no fim os dois iriam ao mapa
+    if (i === GUIDE_STEPS.length - 1) {
+      progress.guide = { done: true, date: Date.now() };
+      saveProgressState();
+    }
+    showScreen('guide');
+  }
+
+  function onGuideGo() {
+    var g = state.guide && GUIDE_STEPS[state.guide.step];
+    if (!g || g.kind === 'home') { state.guide = null; showHome(); return; }
+    var song = guideSong();
+    state.waitMode = g.kind === 'wait';
+    state.demoMode = g.kind === 'demo';
+    state.speed = g.kind === 'normal' ? Math.min(1, GUIDE_SLOW_BPM / song.bpm) : 1;
+    el.waitToggle.checked = state.waitMode;
+    el.demoToggle.checked = state.demoMode;
+    var keep = state.guide;
+    startSong(song);
+    state.guide = keep;   // startSong não mexe no guia, mas fica explícito que ele continua
   }
 
   function finishLesson() {
@@ -1994,6 +2094,7 @@
       setTimeout(function () {
         // Só se nada mudou nesse meio-tempo (não reiniciou, não saiu, não abriu menu).
         if (state.song !== song || state.demoGen !== gen || state.running || !el.overlay.hidden) return;
+        if (state.guide) { showGuide(1); return; }
         showSongSetup(song, listenOnly(song)
           ? { text: 'Fim da música.' }
           : { text: 'Demonstração concluída. Agora é a sua vez: comece pelo Modo espera, que espera você acertar cada nota.',
@@ -2248,6 +2349,10 @@
     setReportExpanded(false);
     // Depois do Modo espera, o próximo passo natural é a mesma música no ritmo; senão, a
     // próxima fase. "Voltar à música" e "Repetir" ficam sempre.
+    if (state.guide) {   // primeira música guiada: o próximo cartão no lugar da tela de fim
+      showGuide(state.waitMode ? 2 : 3, acc);
+      return;
+    }
     var tryNormal = state.waitMode && !listenOnly(state.song);
     el.btnTryNormal.hidden = !tryNormal;
     el.btnNextLevel.hidden = !hasNext;
