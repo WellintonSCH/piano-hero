@@ -38,10 +38,12 @@ window.PianoHero = window.PianoHero || {};
       try {
         var out = ctx.getOutputTimestamp();
         if (out && out.performanceTime != null && out.contextTime != null) {
+          // O par {contextTime, performanceTime} já descreve o quadro de áudio que está saindo
+          // no dispositivo agora, ou seja, já inclui a latência de saída. Projetar o instante
+          // agendado a partir dele dá o instante em que a nota sai. (Até 12/11/2026 este código
+          // somava ctx.outputLatency de novo e contava essa latência duas vezes.)
           var driftSec = audioInfo.scheduledCtxTime - out.contextTime;
           estimatedOutputPerf = out.performanceTime + driftSec * 1000;
-          var hw = ctx.outputLatency != null ? ctx.outputLatency : (ctx.baseLatency || 0);
-          estimatedOutputPerf += hw * 1000;
         }
       } catch (e) { /* getOutputTimestamp indisponível em alguns navegadores */ }
     }
@@ -72,6 +74,7 @@ window.PianoHero = window.PianoHero || {};
     last.baseLatencyMs = ctx && ctx.baseLatency != null ? round(ctx.baseLatency * 1000) : '';
     last.outputLatencyMs = ctx && ctx.outputLatency != null ? round(ctx.outputLatency * 1000) : '';
     last.sampleRate = ctx ? ctx.sampleRate : '';
+    last.metodo = 2; // 2 = sem a soma duplicada de outputLatency (ver acima)
 
     if (samples.length > MAX_SAMPLES) samples.shift();
   }
@@ -127,12 +130,12 @@ window.PianoHero = window.PianoHero || {};
 
   function exportCSV() {
     // Colunas novas só no fim, para não quebrar quem lê as antigas pela posição.
-    var header = 'ts,source,midi,sampleLoaded,estimated,inputToDispatchMs,dispatchToHandleMs,handleToScheduleMs,scheduleToOutputMs,totalMs,mode,songPlaying,baseLatencyMs,outputLatencyMs,sampleRate,userAgent';
+    var header = 'ts,source,midi,sampleLoaded,estimated,inputToDispatchMs,dispatchToHandleMs,handleToScheduleMs,scheduleToOutputMs,totalMs,mode,songPlaying,baseLatencyMs,outputLatencyMs,sampleRate,userAgent,metodo';
     var ua = '"' + navigator.userAgent.replace(/"/g, "'") + '"';
     var rows = samples.map(function (s) {
       return [s.ts, s.source, s.midi, s.sampleLoaded, s.estimated,
         s.inputToDispatchMs, s.dispatchToHandleMs, s.handleToScheduleMs, s.scheduleToOutputMs, s.totalMs,
-        s.mode, s.songPlaying, s.baseLatencyMs, s.outputLatencyMs, s.sampleRate, ua].join(',');
+        s.mode, s.songPlaying, s.baseLatencyMs, s.outputLatencyMs, s.sampleRate, ua, s.metodo].join(',');
     });
     download('piano-hero-latencia-' + Date.now() + '.csv', [header].concat(rows).join('\n'), 'text/csv');
   }
