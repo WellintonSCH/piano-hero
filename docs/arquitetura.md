@@ -96,7 +96,7 @@ Os dados ficam em `localStorage`, na chave `pianoHeroProgress`. Nada é enviado 
 
 ## Medição de latência
 
-O `latency.js` divide o tempo entre a entrada e o som em quatro etapas: entrada até o disparo do evento, evento até o tratamento, tratamento até o agendamento do áudio, e agendamento até a saída estimada. Ele usa `AudioContext.getOutputTimestamp()` para relacionar o relógio do Web Audio com `performance.now()`, e soma `outputLatency`. O valor final é uma estimativa do navegador, não uma medição física do som.
+O `latency.js` divide o tempo entre a entrada e o som em quatro etapas: entrada até o disparo do evento, evento até o tratamento, tratamento até o agendamento do áudio, e agendamento até a saída estimada. Ele usa `AudioContext.getOutputTimestamp()` para relacionar o relógio do Web Audio com `performance.now()`, e projeta o instante agendado a partir do quadro que está saindo no dispositivo, que já inclui a latência de saída (até 12/11/2026 o código somava `outputLatency` de novo e contava essa latência duas vezes; o CSV traz a coluna `metodo` = 2 nas medições corrigidas). O valor final é uma estimativa do navegador, não uma medição física do som.
 
 ## Degradação graciosa
 
