@@ -27,8 +27,8 @@ As páginas citadas seguem dois padrões:
   - **Deja**, descrito como sistema pronto quando é uma proposta.
   - **Wan**, sem PDF; trocado por Li et al. (2026).
 - **Saem do texto:** Wan, Crawford e Jenkins (2022) e Hyzy et al. (2022).
-- **Entram no texto:** Silva et al. (2025), Li et al. (2026), McPherson e Renwick (2001) com citação direta, Lewis e Sauro (2018), Deterding et al. (2011) via apud, e, como opcionais, Kori e Moniz et al. (2024).
-- **Ainda manual:** sites do Quadro 1, W3C, ofício da CONEP e dados do Kori.
+- **Entram no texto:** Silva et al. (2025), Li et al. (2026), McPherson e Renwick (2001) com citação direta, Lewis e Sauro (2018), Deterding et al. (2011) via apud e, como opcional, Moniz et al. (2024).
+- **Ainda pendente:** W3C (data, editor e suporte por navegador) e ofício da CONEP (orientador).
 
 ---
 
@@ -282,7 +282,6 @@ Depois de compilar, procure `??` e avisos de "citation undefined".
 | Cheng / Mita | "Aprender" em vez de "compreender"; interface de 5 pistas em vez de piano | Baixa | C3 e C5. |
 | Zainuddin | "Pequenos" atribuído a quem não mediu efeito | Baixa | C3. |
 | Sailer | Definição de outro autor | Baixa | C6, com Deterding et al. (2011) via apud. |
-| Kori | Não se sabe se é artigo publicado ou dissertação, nem o ano | Média, se for usar | Conferir antes (Parte 4). Se for dissertação de mestrado, a banca pode achar fraco: use Moniz no lugar. |
 | Quadro 1 | Células sobre os apps comerciais não conferidas | Média | Parte 4. Se não der tempo, mantenha a nota "consultados em novembro de 2026" e avise o orientador. |
 | Peifer / Ryan e Deci / Zainuddin | Veredito sem trecho literal | Baixa | São ideias gerais, sem números. Pode ficar para depois. |
 
@@ -298,11 +297,11 @@ Parte do embasamento teórico vem de estudos em contextos diferentes do avaliado
 
 Em ordem, com o tempo estimado:
 
-1. ✅ **Kori:** resolvido, saiu do texto. **[5 min] (histórico)** abra o PDF "SUS Duolingo" e anote o tipo (artigo, dissertação ou trabalho de curso), o ano e onde foi publicado. Se não fechar, apague a frase do Kori na C9.
-2. ✅ **McPherson e Renwick (2001):** dados conferidos. **(histórico)** confira no PDF o volume, o número, as páginas e o DOI que estão no .bib novo.
-3. ✅ **SUS aplicado:** os 10 itens do protocolo são iguais aos de Lourenço. **(histórico)** compare os 10 itens do seu questionário com a Tabela 1 de Lourenço (2022). Precisam ser iguais.
+1. ✅ **Kori:** saiu do texto (trabalho de disciplina, sem revista e sem data).
+2. ✅ **McPherson e Renwick (2001):** dados conferidos.
+3. ✅ **SUS aplicado:** os 10 itens do protocolo são iguais aos de Lourenço.
 4. **[10 min] W3C:** abra w3.org/TR/webmidi e w3.org/TR/webaudio. Confira status, data e editor. Veja o suporte em caniuse.com/midi.
-5. ✅ **Quadro 1:** conferido pelo autor. Deixe abaixo do quadro: "Fonte: elaborado pelo autor com base nos sites oficiais, consultados em novembro de 2026". **(histórico)** nos sites do Synthesia, do Simply Piano e do flowkey, confira as células "roda no navegador", "gratuito", "modo espera", "MIDI" e "microfone". Se não der tempo, avise o orientador.
+5. ✅ **Quadro 1:** conferido pelo autor. Deixe abaixo do quadro: "Fonte: elaborado pelo autor com base nos sites oficiais, consultados em novembro de 2026".
 6. **[1 min] CONEP:** mande mensagem ao orientador sobre a dispensa ou o número do parecer.
 7. **[30 min] Overleaf:** aplique as correções C1 a C12, cole as entradas do .bib novo, compile e procure `??`.
 
