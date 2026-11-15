@@ -49,16 +49,16 @@ As páginas citadas seguem dois padrões:
 | R11 | Deja (2022) | ✅ | ✏️ é proposta de doutorado, não sistema pronto | C10 |
 | R12 | Molero et al. (2021) | ❌ sem acesso | ⚠️ usar só o que está no resumo | C11 |
 | R13 | Amm et al. (2024) | ✅ | ✅ | – |
-| R14 | Synthesia, Simply Piano, flowkey | site | ⬜ conferir Quadro 1 | Parte 4 |
+| R14 | Synthesia, Simply Piano, flowkey | site | ✅ conferido pelo autor (usou os três) | fonte abaixo do Quadro 1 |
 | R15 | Schmid et al. (2024) | ✅ | ❌ números e "meta conservadora" errados | C8 |
 | R16 | ~~Hyzy et al. (2022)~~ → Lewis e Sauro (2018) | – / ✅ | ✏️ trocar | C9 |
-| R17 | Lourenço, Carmona e Lopes (2022) | ✅ | ✅ | conferir itens aplicados (Parte 4) |
+| R17 | Lourenço, Carmona e Lopes (2022) | ✅ | ✅ itens do protocolo iguais à versão brasileira | – |
 | R18 | W3C Web Audio e Web MIDI | site | ⬜ data, editor, suporte | Parte 4 |
 | R19 | Ofício CONEP 17/2022 | – | ⬜ orientador | Parte 4 |
-| R20 | McPherson e Renwick (2001) | ✅ | ✅ citar direto, sem apud · ⚠️ amostra de crianças | C1 |
+| R20 | McPherson e Renwick (2001) | ✅ | ✅ citar direto; dados do .bib conferidos · 7 crianças de 7 a 9 anos, instrumentos de banda | C1 |
 | R21 | Silva et al. (2025) | ✅ | ✅ | C1 |
 | I01 | Lewis e Sauro (2018) | ✅ | ✅ (p. 161) | C9 |
-| I02 | Kori (2021/2022), SUS do Duolingo | ✅ | ⚠️ conferir tipo e ano | C9 (opcional) |
+| I02 | ~~Kori~~, SUS do Duolingo | ✅ | ❌ trabalho de disciplina, sem revista e sem data: não citar | – |
 | I03 | Moniz et al. (2024), jogo musical com SUS | ✅ | ✅ | C9 (opcional) |
 
 ### Trechos das referências validadas nesta etapa
@@ -222,7 +222,7 @@ Por que mudou:
 
 **Depois (2.5):**
 ```latex
-Para interpretar a nota, a referência mais usada é a média de 68 pontos: na escala de notas proposta por Sauro e Lewis, construída com dados de 241 estudos de usabilidade, a nota 68 corresponde ao centro da faixa C, isto é, à média \cite{lewis2018}. A mesma referência aparece na avaliação de aplicativos educacionais gamificados, como o Duolingo \cite{kori}, e o SUS também tem sido usado em jogos musicais: um jogo que simula a prática de piano obteve nota média de 88,67 em avaliação com 30 fisioterapeutas \cite{moniz2024}.
+Para interpretar a nota, a referência mais usada é a média de 68 pontos: na escala de notas proposta por Sauro e Lewis, construída com dados de 241 estudos de usabilidade, a nota 68 corresponde ao centro da faixa C, isto é, à média \cite{lewis2018}. O SUS também tem sido usado em jogos musicais: um jogo que simula a prática de piano obteve nota média de 88,67 em avaliação com 30 fisioterapeutas \cite{moniz2024}.
 ```
 
 **5.6, pergunta (1):** troque `(Hyzy et al., 2022)` por `\cite{lewis2018}`.
@@ -230,7 +230,7 @@ Para interpretar a nota, a referência mais usada é a média de 68 pontos: na e
 Por que mudou:
 - O Hyzy trata de apps de saúde.
 - Os números 117, 114, 76,6 e 68,05 não foram validados, porque não há PDF do Hyzy.
-- Se o Kori não fechar (ver Parte 4), apague a frase dele. A de Moniz pode ficar sozinha.
+- O Kori saiu: é um trabalho de disciplina da Bournemouth University, sem revista e sem data. Fica só o Moniz.
 
 ### C10. Deja: Introdução (p. 12), 3.2 (p. 22) e Quadro 1
 
@@ -298,11 +298,11 @@ Parte do embasamento teórico vem de estudos em contextos diferentes do avaliado
 
 Em ordem, com o tempo estimado:
 
-1. **[5 min] Kori:** abra o PDF "SUS Duolingo" e anote o tipo (artigo, dissertação ou trabalho de curso), o ano e onde foi publicado. Se não fechar, apague a frase do Kori na C9.
-2. **[2 min] McPherson e Renwick (2001):** confira no PDF o volume, o número, as páginas e o DOI que estão no .bib novo.
-3. **[5 min] SUS aplicado:** compare os 10 itens do seu questionário com a Tabela 1 de Lourenço (2022). Precisam ser iguais.
+1. ✅ **Kori:** resolvido, saiu do texto. **[5 min] (histórico)** abra o PDF "SUS Duolingo" e anote o tipo (artigo, dissertação ou trabalho de curso), o ano e onde foi publicado. Se não fechar, apague a frase do Kori na C9.
+2. ✅ **McPherson e Renwick (2001):** dados conferidos. **(histórico)** confira no PDF o volume, o número, as páginas e o DOI que estão no .bib novo.
+3. ✅ **SUS aplicado:** os 10 itens do protocolo são iguais aos de Lourenço. **(histórico)** compare os 10 itens do seu questionário com a Tabela 1 de Lourenço (2022). Precisam ser iguais.
 4. **[10 min] W3C:** abra w3.org/TR/webmidi e w3.org/TR/webaudio. Confira status, data e editor. Veja o suporte em caniuse.com/midi.
-5. **[20 min] Quadro 1:** nos sites do Synthesia, do Simply Piano e do flowkey, confira as células "roda no navegador", "gratuito", "modo espera", "MIDI" e "microfone". Se não der tempo, avise o orientador.
+5. ✅ **Quadro 1:** conferido pelo autor. Deixe abaixo do quadro: "Fonte: elaborado pelo autor com base nos sites oficiais, consultados em novembro de 2026". **(histórico)** nos sites do Synthesia, do Simply Piano e do flowkey, confira as células "roda no navegador", "gratuito", "modo espera", "MIDI" e "microfone". Se não der tempo, avise o orientador.
 6. **[1 min] CONEP:** mande mensagem ao orientador sobre a dispensa ou o número do parecer.
 7. **[30 min] Overleaf:** aplique as correções C1 a C12, cole as entradas do .bib novo, compile e procure `??`.
 
