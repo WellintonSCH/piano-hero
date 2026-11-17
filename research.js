@@ -63,7 +63,8 @@
     if (!current) return;
     var a = current;
     current = null;
-    a.status = status;
+    // Demonstração não tem desempenho a medir: sai como "assistida", não "abandonada".
+    a.status = status === 'abandonada' && a.modo === 'demonstracao' ? 'assistida' : status;
     a.fim = nowISO();
     a.duracao_s = Math.round((performance.now() - a._t0) / 100) / 10;
     delete a._t0;
