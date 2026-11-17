@@ -22,13 +22,28 @@
   var CURRENT_KEY = 'pianoHeroResearchParticipant';
   var PROGRESS_KEY = 'pianoHeroProgress';   // mesma chave usada em main.js
 
-  var match = /[?&]pesquisa=([A-Za-z0-9_-]{1,20})/.exec(location.search);
-  if (!match) return;
-  var participant = match[1].toUpperCase();
-
   function load(key, def) {
     try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; }
   }
+
+  // ?pesquisa=P03 usa o código dado; ?pesquisa sozinho continua o último participante
+  // (ou começa em P01), para o pesquisador não precisar digitar nada.
+  var match = /[?&]pesquisa(?:=([A-Za-z0-9_-]{0,20}))?(?:&|$)/.exec(location.search);
+  if (!match) return;
+  var participant = (match[1] || load(CURRENT_KEY, null) || 'P01').toUpperCase();
+  if (!match[1] && history.replaceState) {
+    history.replaceState(null, '', location.pathname + '?pesquisa=' + participant + location.hash);
+  }
+
+  /** Próximo código: P01 → P02, P9 → P10, A → A2. */
+  function nextCode(code) {
+    var m = /^(.*?)(\d+)$/.exec(code);
+    if (!m) return code + '2';
+    var n = String(Number(m[2]) + 1);
+    while (n.length < m[2].length) n = '0' + n;
+    return m[1] + n;
+  }
+  var nextParticipant = nextCode(participant);
   function save(key, v) {
     try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) { /* privado/bloqueado */ }
   }
@@ -115,11 +130,27 @@
 
   function stamp() { return new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-'); }
 
-  function exportCSV() {
-    var lines = [COLUMNS.join(',')].concat(log.map(function (a) {
+  function exportCSV(rows, name) {
+    rows = rows || log;
+    var lines = [COLUMNS.join(',')].concat(rows.map(function (a) {
       return COLUMNS.map(function (c) { return csvCell(a[c]); }).join(',');
     }));
-    download('pesquisa-piano-hero-' + stamp() + '.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+    download(name || 'pesquisa-piano-hero-' + stamp() + '.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+  }
+
+  /** Fim da sessão: fecha a tentativa aberta, baixa o CSV deste participante e abre o próximo. */
+  function finishParticipant() {
+    close('abandonada');
+    var mine = log.filter(function (a) { return a.participante === participant; });
+    if (mine.length) exportCSV(mine, 'pesquisa-' + participant + '-' + stamp() + '.csv');
+    setTimeout(function () { location.search = '?pesquisa=' + encodeURIComponent(nextParticipant); }, 600);
+  }
+
+  /** Recomeça o mesmo participante do zero (progresso do jogo apagado; o registro fica). */
+  function restartParticipant() {
+    close('abandonada');
+    try { localStorage.removeItem(PROGRESS_KEY); } catch (e) { /* ignora */ }
+    location.reload();
   }
 
   function exportJSON() {
@@ -147,6 +178,8 @@
       '<div class="research-panel" hidden>' +
         '<strong>Participante ' + participant + '</strong>' +
         '<small class="research-count"></small>' +
+        '<button type="button" data-act="next" class="primary research-big">Encerrar e ir para ' + nextParticipant + ' ▶</button>' +
+        '<button type="button" data-act="restart" class="ghost">Recomeçar ' + participant + ' do zero</button>' +
         '<div class="research-actions">' +
           '<button type="button" data-act="csv">Exportar CSV</button>' +
           '<button type="button" data-act="json" class="ghost">JSON</button>' +
@@ -172,10 +205,22 @@
       refreshPanel();
     });
 
-    var confirmClear = false;
+    var confirmClear = false, armed = null;
+    // Ações que mudam de participante pedem um segundo clique (sem confirm(), ver abaixo).
+    function twoStep(btn, label) {
+      if (armed === btn) return true;
+      if (armed) armed.textContent = armed.getAttribute('data-label');
+      btn.setAttribute('data-label', btn.textContent);
+      btn.textContent = label;
+      armed = btn;
+      setTimeout(function () { if (armed === btn) { btn.textContent = btn.getAttribute('data-label'); armed = null; } }, 4000);
+      return false;
+    }
     panel.addEventListener('click', function (e) {
       var act = e.target && e.target.getAttribute('data-act');
-      if (act === 'csv') exportCSV();
+      if (act === 'next') { if (twoStep(e.target, 'Clique de novo: salva o CSV e passa para ' + nextParticipant)) finishParticipant(); }
+      else if (act === 'restart') { if (twoStep(e.target, 'Clique de novo para recomeçar')) restartParticipant(); }
+      else if (act === 'csv') exportCSV();
       else if (act === 'json') exportJSON();
       else if (act === 'clear') {
         // Duas etapas, sem confirm() (diálogos nativos travam a automação e assustam no teste).
@@ -203,6 +248,7 @@
     attemptStart: attemptStart,
     attemptEnd: attemptEnd,
     exportCSV: exportCSV,
+    finishParticipant: finishParticipant,
     exportJSON: exportJSON,
     getLog: function () { return log.slice(); }
   };

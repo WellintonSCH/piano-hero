@@ -1688,6 +1688,7 @@ html.compact .research-panel { bottom: auto; top: calc(100% + 6px); left: 50%; t
   border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit;
 }
 .research-clear { font-size: 12px; }
+.research-big { font-size: 15px; padding: 10px 12px; }
 
 /* ---------------- primeiros passos (introdução guiada) ---------------- */
 .lesson-banner {

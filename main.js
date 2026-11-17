@@ -1418,6 +1418,18 @@
     document.getElementById('btnProfile').addEventListener('click', showProfile);
     el.homeStatus.addEventListener('click', showProfile);
     el.btnProfileBack.addEventListener('click', showHome);
+    // Recomeçar do zero (fases, estrelas, introdução). Dois cliques, sem confirm().
+    var btnReset = document.getElementById('btnResetProgress');
+    btnReset.addEventListener('click', function () {
+      if (!btnReset.classList.contains('armed')) {
+        btnReset.classList.add('armed');
+        btnReset.textContent = 'Clique de novo para apagar tudo';
+        setTimeout(function () { btnReset.classList.remove('armed'); btnReset.textContent = 'Apagar progresso'; }, 4000);
+        return;
+      }
+      try { localStorage.removeItem(PROGRESS_KEY); } catch (e) { /* ignora */ }
+      location.reload();
+    });
     el.profileName.addEventListener('input', function () {
       progress.profile.name = el.profileName.value.trim().slice(0, 20);
       saveProgressState();
