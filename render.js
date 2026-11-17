@@ -352,7 +352,7 @@ window.PianoHero = window.PianoHero || {};
 
         if (h >= 15) {   // em barra muito curta o nome não cabe; a cor e a posição bastam
           ctx.fillStyle = isTarget ? '#0b0d17' : 'rgba(11,13,23,.7)';
-          ctx.font = (isTarget ? 'bold ' : '') + (h >= 20 ? '13px' : '11px') + ' system-ui, sans-serif';
+          ctx.font = (isTarget ? 'bold ' : '') + (st.lesson ? '17px' : h >= 20 ? '13px' : '11px') + ' system-ui, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(PH.notes.noteName(n.midi), k.cx, y + h / 2 + 1);
@@ -466,8 +466,8 @@ window.PianoHero = window.PianoHero || {};
         // então as brancas mostram o nome da nota (as pretas são estreitas demais pra texto).
         // Na introdução guiada, também no computador: o objetivo é aprender o nome das teclas.
         if (names && !key.black) {
-          ctx.fillStyle = color;
-          ctx.font = 'bold 14px system-ui, sans-serif';
+          ctx.fillStyle = '#2a3148';
+          ctx.font = 'bold ' + Math.max(13, Math.min(20, Math.floor(key.w * 0.42))) + 'px system-ui, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'alphabetic';
           ctx.fillText(PH.notes.noteName(key.midi), key.cx, y);

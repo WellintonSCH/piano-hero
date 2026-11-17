@@ -1691,23 +1691,30 @@ html.compact .research-panel { bottom: auto; top: calc(100% + 6px); left: 50%; t
 
 /* ---------------- primeiros passos (introdução guiada) ---------------- */
 .lesson-banner {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
-  width: min(560px, calc(100% - 32px));
+  /* No canto esquerdo, em cima da oitava grave: as notas da introdução caem na oitava do
+     meio, e o texto no centro escondia a nota chegando. */
+  position: absolute; top: 12px; left: 16px; z-index: 5;
+  width: min(330px, calc(100% - 32px));
   padding: 12px 16px; border-radius: var(--radius-md);
   background: rgba(20, 24, 41, .92); border: 1px solid var(--line);
   color: var(--text); text-align: center; pointer-events: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
 }
 .lesson-banner[hidden] { display: none; }
-.lesson-step { display: block; color: var(--muted); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
-.lesson-title { display: block; font-size: 18px; margin: 2px 0 4px; }
-.lesson-text { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text); }
-.lesson-tip { margin: 8px 0 0; font-size: 13px; color: var(--gold); }
+.lesson-step { display: block; color: var(--muted); font-size: 14px; letter-spacing: .04em; text-transform: uppercase; }
+.lesson-title { display: block; font-size: 28px; margin: 2px 0 6px; }
+.lesson-text { margin: 0; font-size: 20px; line-height: 1.4; color: var(--text); }
+.lesson-tip { margin: 10px 0 0; font-size: 26px; font-weight: 700; color: var(--gold); }
 .lesson-banner.done { border-color: var(--good); }
-.lesson-banner.done .lesson-title { color: var(--good); font-size: 22px; margin: 4px 0; }
+.lesson-banner.done .lesson-title { color: var(--good); font-size: 30px; margin: 4px 0; }
+.intro-star { font-size: 72px; line-height: 1; color: var(--gold); text-align: center; margin: 4px 0 8px;
+  animation: intro-star-pop .5s ease-out; }
+@keyframes intro-star-pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 html.compact .lesson-banner { top: 76px; padding: 6px 10px; }
 html.compact .lesson-step { display: none; }
-html.compact .lesson-title { font-size: 15px; }
+html.compact .lesson-title { font-size: 20px; }
+html.compact .lesson-text { font-size: 15px; }
+html.compact .lesson-tip { font-size: 18px; margin-top: 4px; }
 html.compact .lesson-text { font-size: 12px; line-height: 1.35; }
 html.compact .lesson-tip { font-size: 12px; margin-top: 4px; }
 

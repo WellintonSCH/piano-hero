@@ -17,7 +17,10 @@
   var VISIBLE_NOTES = 7;     // quantas notas ficam empilhadas na tela (modo livre)
   var FALL_SPEED = 220;      // px/s no modo livre
   var LESSON_FALL_SPEED = 120;   // px/s na introdução guiada: mais calma, para quem nunca tocou
-  var LESSON_MIN = 60, LESSON_MAX = 72;   // introdução: só a oitava do Dó central
+  // Introdução: 3 oitavas no computador (dá pra procurar o Dó central e ver os Dós se repetindo);
+  // no celular, só a oitava do Dó central.
+  var LESSON_MIN = (PH.notes && PH.notes.COMPACT) ? 60 : 48;
+  var LESSON_MAX = (PH.notes && PH.notes.COMPACT) ? 72 : 84;
   var FLASH_TIME = 0.45;     // segundos do eco de brilho na tecla, depois de soltar
   var PROGRESS_KEY = 'pianoHeroProgress';
 
@@ -1797,28 +1800,17 @@
    * volta depois de dois erros na mesma nota.
    */
   var LESSON_STEPS = [
-    { title: 'As teclas pretas',
-      text: 'Esta é a parte do meio do piano. As teclas pretas vêm em grupos de 2 e de 3, e esse desenho se repete pelo piano todo. O Dó é a tecla branca logo à esquerda do grupo de 2 pretas; o Dó marcado com um ponto é o Dó central. Toque um Dó.',
-      notes: [60, 60, 60], hint: true, allOctaves: true },
-    { title: 'Todos os Dós',
-      text: 'Agora sem a luz de ajuda: ache o Dó pelo grupo de 2 pretas. No piano, o mesmo desenho se repete: Dós mais graves ou mais agudos também valem.',
-      notes: [60, 60, 60, 60], hint: false },
-    { title: 'Dó, Ré, Mi',
-      text: 'O Ré fica entre as 2 pretas, e o Mi, logo à direita delas. Suba e desça: Dó, Ré, Mi.',
-      notes: [60, 62, 64, 62, 60, 62, 64, 64], hint: true },
-    { title: 'Fá e Sol',
-      text: 'O Fá fica logo à esquerda do grupo de 3 pretas, e o Sol vem em seguida. Com o polegar no Dó, cada dedo fica numa tecla: Dó, Ré, Mi, Fá, Sol.',
-      notes: [60, 62, 64, 65, 67, 65, 64, 62, 60], hint: true },
-    { title: 'Lá e Si',
-      text: 'Depois do Sol vêm o Lá, entre a 2ª e a 3ª das 3 pretas, e o Si, logo depois delas. Depois do Si, o desenho recomeça com outro Dó. Para a direita o som fica mais agudo; para a esquerda, mais grave.',
-      notes: [67, 69, 71, 72, 71, 69, 67], hint: true },
-    { title: 'A oitava inteira',
-      text: 'Dó, Ré, Mi, Fá, Sol, Lá, Si e Dó de novo: 8 teclas brancas formam uma oitava. Suba e desça a escala, agora sem a luz.',
-      notes: [60, 62, 64, 65, 67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60], hint: false },
-    { title: 'Desafio',
-      text: 'Sem luz e fora de ordem: as 7 notas misturadas. Se errar duas vezes a mesma nota, a tecla acende.',
-      random: { pool: [60, 62, 64, 65, 67, 69, 71], count: 12 }, hint: false }
+    // 1) Explorar: toca qualquer tecla e o jogo diz o nome e pra que lado fica o Dó central.
+    { title: 'Ache o Dó central!', text: 'Toque qualquer tecla.', find: 60, hint: false,
+      done: 'Achou! Esse é o Dó central.' },
+    // 2) A escala subindo e descendo, com as notas caindo como no jogo (cada uma espera).
+    { title: 'Agora as outras notas!', text: 'Toque cada nota que cair.',
+      notes: [60, 62, 64, 65, 67, 69, 71, 69, 67, 65, 64, 62, 60], hint: true },
+    // 3) Oitavas: todos os Dós acendem; qualquer um vale.
+    { title: 'O Dó fica antes das 2 pretas', text: 'Ele se repete no teclado todo. Toque um Dó!',
+      notes: [60], hint: true, allOctaves: true }
   ];
+  var FIND_HINT_AFTER = 5;   // tentativas no passo 1 até o Dó central acender
   var LESSON_TIPS = {
     0: 'O Dó é a tecla branca logo à esquerda do grupo de 2 pretas.',
     2: 'O Ré é a tecla branca entre as 2 pretas.',
@@ -1828,7 +1820,7 @@
     9: 'O Lá é a tecla branca entre a 2ª e a 3ª das 3 pretas.',
     11: 'O Si é a tecla branca logo à direita do grupo de 3 pretas.'
   };
-  var LESSON_PAUSE_MS = 1300;   // "Muito bem!" entre um passo e o próximo
+  var LESSON_PAUSE_MS = 1100;   // "Muito bem!" entre um passo e o próximo
 
   function pitchClass(m) { return ((m % 12) + 12) % 12; }
 
@@ -1869,7 +1861,7 @@
     L.t0 = performance.now();
     L.transition = false;
     if (PH.research) {
-      var total = LESSON_STEPS.reduce(function (n, s) { return n + (s.random ? s.random.count : s.notes.length); }, 0);
+      var total = LESSON_STEPS.reduce(function (n, s) { return n + (s.random ? s.random.count : s.notes ? s.notes.length : 1); }, 0);
       PH.research.attemptStart({ songId: 'introducao', title: 'Primeiros passos', mode: 'introducao',
                                  bpm: null, notes: total });
     }
@@ -1888,9 +1880,10 @@
         last = m;
       }
     } else {
-      L.queue = step.notes.slice();
+      L.queue = step.notes ? step.notes.slice() : [];
     }
     L.errorsHere = 0;
+    L.tries = 0;
     L.stepStart = performance.now();
     L.transition = false;
     L.tip = '';
@@ -1914,7 +1907,10 @@
 
   function onLessonNote(played) {
     var L = state.lesson;
-    if (L.transition || !state.notes.length) return;
+    if (L.transition) return;
+    var step = LESSON_STEPS[L.step];
+    if (step.find != null) { onFindNote(played, step.find); return; }
+    if (!state.notes.length) return;
     var target = state.notes[0].midi;
     var ok = pitchClass(played) === pitchClass(target);   // qualquer oitava vale
     holdKey(played, ok);
@@ -1936,20 +1932,39 @@
       state.combo = 0;
       if (L.errorsHere >= 2) state.hint = true;   // duas erradas seguidas: a tecla certa acende
       if (state.effects) PH.render.burst(played, false);
-      L.tip = 'Essa é ' + PH.notes.noteName(played) + '. ' + (LESSON_TIPS[pitchClass(target)] || '');
+      L.tip = 'Essa é ' + PH.notes.noteName(played) + '.';
       showFeedback('Era ' + PH.notes.noteName(target) + '!', 'bad');
     }
     renderLessonBanner();
     updateHUD();
   }
 
+  /** Passo "ache o Dó central": diz o nome da tecla tocada e pra que lado ir, sem contar erro. */
+  function onFindNote(played, goal) {
+    var L = state.lesson;
+    holdKey(played, played === goal);
+    if (played === goal) {
+      L.hits++;
+      L.tip = '';
+      registerHit(played, false);
+      renderLessonBanner();
+      completeLessonStep();
+      return;
+    }
+    L.tries++;
+    L.tip = PH.notes.noteName(played) + (played > goal ? ' · mais pra esquerda ←' : ' · mais pra direita →');
+    if (L.tries >= FIND_HINT_AFTER) { state.hint = true; state.targetMidis = [goal]; }
+    renderLessonBanner();
+  }
+
   function completeLessonStep() {
     var L = state.lesson, gen = L.gen;
+    var doneText = LESSON_STEPS[L.step].done || 'Muito bem!';
     L.stepTimes.push(Math.round((performance.now() - L.stepStart) / 100) / 10);
     L.step++;
     if (L.step >= LESSON_STEPS.length) { finishLesson(); return; }
     L.transition = true;
-    renderLessonBanner('Muito bem!');
+    renderLessonBanner(doneText);
     setTimeout(function () {
       if (state.lesson === L && L.gen === gen && L.transition) loadLessonStep();
     }, LESSON_PAUSE_MS);
@@ -2053,11 +2068,7 @@
         perfect: 0, good: L.hits, wrong: L.misses, timeout: 0, late: 0,
         meanDeltaMs: null, meanAbsDeltaMs: null, stepTimes: L.stepTimes });
     }
-    el.introStats.innerHTML =
-      '<div class="stat"><span>Acertos</span><strong>' + L.hits + '</strong></div>' +
-      '<div class="stat"><span>Erros</span><strong>' + L.misses + '</strong></div>' +
-      '<div class="stat"><span>Precisão</span><strong>' + acc + '%</strong></div>' +
-      '<div class="stat"><span>Tempo</span><strong>' + formatTime(secs) + '</strong></div>';
+    el.introStats.innerHTML = '<div class="intro-star" aria-hidden="true">★</div>';
     exitLesson();
     showScreen('intro');
   }
@@ -2602,7 +2613,11 @@
   /* ---------------- comum aos dois modos ---------------- */
 
   function onNotePlayed(detail) {
-    if (!state.running || state.targetMidis.length === 0) return;   // menu/tela de fim não reage a notas
+    // Menu/tela de fim não reage a notas. Exceção: o passo "ache o Dó central" da introdução
+    // não tem alvo desenhado, mas precisa ouvir qualquer tecla.
+    var finding = state.lesson && !state.lesson.transition && LESSON_STEPS[state.lesson.step] &&
+                  LESSON_STEPS[state.lesson.step].find != null;
+    if (!state.running || (state.targetMidis.length === 0 && !finding)) return;
     var tHandle = performance.now();
     PH.audio.startNote(detail.midi, state.targetMidis.indexOf(detail.midi) !== -1 ? 1 : 0.6, {
       source: detail.source, midi: detail.midi,
