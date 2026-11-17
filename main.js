@@ -1823,9 +1823,11 @@
     //    centro, porque aqui as notas caem nas pontas do teclado.
     { title: 'Dá pra tocar mais agudo…', text: '…e mais grave também!', exact: true, center: true, hint: true,
       desktopOnly: true, notes: [72, 74, 76, 48, 50, 52] },
-    // 4) Oitavas: todos os Dós acendem; qualquer um vale.
-    { title: 'O Dó fica antes das 2 pretas', text: 'Ele se repete no teclado todo. Toque um Dó!',
-      notes: [60], hint: true, allOctaves: true }
+    // 4) Oitavas: todos os Dós acendem e a pessoa toca vários, cada um num lugar diferente.
+    { title: 'O Dó fica antes das 2 pretas', text: 'Ele se repete. Toque Dós diferentes!',
+      collect: 0, count: (PH.notes && PH.notes.COMPACT) ? 2 : 3, hint: true },
+    // 5) Exploração livre: qualquer tecla vale, só pra mexer no instrumento antes do jogo.
+    { title: 'Agora explore!', text: 'Toque 5 teclas quaisquer para começar.', explore: 5, hint: false }
   ];
   if (PH.notes && PH.notes.COMPACT) LESSON_STEPS = LESSON_STEPS.filter(function (st) { return !st.desktopOnly; });
   var FIND_HINT_AFTER = 5;   // tentativas no passo 1 até o Dó central acender
@@ -1902,6 +1904,7 @@
     }
     L.errorsHere = 0;
     L.tries = 0;
+    L.used = [];
     L.stepStart = performance.now();
     L.transition = false;
     L.tip = '';
@@ -1915,8 +1918,10 @@
   /** Alvo(s) do passo: a nota da vez; no 1º passo, todas as teclas daquela nota acendem. */
   function lessonSyncTarget() {
     var L = state.lesson;
+    var step = LESSON_STEPS[L.step];
+    if (step.collect != null) { state.targetMidis = collectTargets(step); return; }
     if (!state.notes.length) { state.targetMidis = []; return; }
-    var t = state.notes[0].midi, step = LESSON_STEPS[L.step];
+    var t = state.notes[0].midi;
     if (!step.allOctaves) { state.targetMidis = [t]; return; }
     var out = [];
     for (var m = PH.notes.MIN_MIDI; m <= PH.notes.MAX_MIDI; m++) if (pitchClass(m) === pitchClass(t)) out.push(m);
@@ -1928,6 +1933,8 @@
     if (L.transition) return;
     var step = LESSON_STEPS[L.step];
     if (step.find != null) { onFindNote(played, step.find); return; }
+    if (step.collect != null) { onCollectNote(played, step); return; }
+    if (step.explore != null) { onExploreNote(played, step); return; }
     if (!state.notes.length) return;
     var target = state.notes[0].midi;
     // Qualquer oitava vale, menos no passo que ensina justamente a oitava (exact).
@@ -1974,6 +1981,50 @@
     L.tip = PH.notes.noteName(played) + (played > goal ? ' · mais pra esquerda ←' : ' · mais pra direita →');
     if (L.tries >= FIND_HINT_AFTER) { state.hint = true; state.targetMidis = [goal]; }
     renderLessonBanner();
+  }
+
+  /** Passo dos Dós: todos acendem; cada Dó tocado apaga, até juntar `count` diferentes. */
+  function collectTargets(step) {
+    var out = [];
+    for (var m = PH.notes.MIN_MIDI; m <= PH.notes.MAX_MIDI; m++) {
+      if (pitchClass(m) === step.collect && state.lesson.used.indexOf(m) === -1) out.push(m);
+    }
+    return out;
+  }
+
+  function onCollectNote(played, step) {
+    var L = state.lesson;
+    var isC = pitchClass(played) === step.collect;
+    var fresh = isC && L.used.indexOf(played) === -1;
+    holdKey(played, isC);
+    if (fresh) {
+      L.used.push(played);
+      L.hits++;
+      registerHit(played, false);
+      L.tip = L.used.length + ' de ' + step.count;
+      state.targetMidis = collectTargets(step);
+      if (L.used.length >= step.count) { renderLessonBanner(); completeLessonStep(); return; }
+    } else if (isC) {
+      L.tip = 'Esse já foi! Ache outro Dó.';
+    } else {
+      L.misses++;
+      L.tip = 'Essa é ' + PH.notes.noteName(played) + '.';
+      if (state.effects) PH.render.burst(played, false);
+    }
+    renderLessonBanner();
+    updateHUD();
+  }
+
+  /** Passo final: qualquer tecla conta, só pra explorar o teclado. */
+  function onExploreNote(played, step) {
+    var L = state.lesson;
+    holdKey(played, true);
+    L.used.push(played);
+    if (state.effects) PH.render.burst(played, true);
+    var left = step.explore - L.used.length;
+    L.tip = left > 0 ? 'Faltam ' + left + '!' : '';
+    renderLessonBanner();
+    if (left <= 0) completeLessonStep();
   }
 
   function completeLessonStep() {
@@ -2635,8 +2686,8 @@
   function onNotePlayed(detail) {
     // Menu/tela de fim não reage a notas. Exceção: o passo "ache o Dó central" da introdução
     // não tem alvo desenhado, mas precisa ouvir qualquer tecla.
-    var finding = state.lesson && !state.lesson.transition && LESSON_STEPS[state.lesson.step] &&
-                  LESSON_STEPS[state.lesson.step].find != null;
+    var ls = state.lesson && !state.lesson.transition && LESSON_STEPS[state.lesson.step];
+    var finding = !!ls && (ls.find != null || ls.collect != null || ls.explore != null);
     if (!state.running || (state.targetMidis.length === 0 && !finding)) return;
     var tHandle = performance.now();
     PH.audio.startNote(detail.midi, state.targetMidis.indexOf(detail.midi) !== -1 ? 1 : 0.6, {
