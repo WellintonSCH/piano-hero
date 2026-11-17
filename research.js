@@ -143,7 +143,9 @@
     close('abandonada');
     var mine = log.filter(function (a) { return a.participante === participant; });
     if (mine.length) exportCSV(mine, 'pesquisa-' + participant + '-' + stamp() + '.csv');
-    setTimeout(function () { location.search = '?pesquisa=' + encodeURIComponent(nextParticipant); }, 600);
+    setTimeout(function () {
+      location.search = '?pesquisa=' + encodeURIComponent(nextParticipant) + '&obrigado=1';
+    }, 600);
   }
 
   /** Recomeça o mesmo participante do zero (progresso do jogo apagado; o registro fica). */
@@ -238,6 +240,31 @@
       location.search = '?pesquisa=' + encodeURIComponent(v.toUpperCase());
     });
     refreshPanel();
+    if (/[?&]obrigado=1/.test(location.search)) showThanks();
+  }
+
+  /**
+   * Depois de "Encerrar": a tela de agradecimento cobre o jogo (já zerado para o próximo
+   * participante) até o pesquisador ou a próxima pessoa tocar em "Começar".
+   */
+  function showThanks() {
+    var box = document.createElement('div');
+    box.className = 'research-thanks';
+    box.innerHTML =
+      '<div class="research-thanks-card" role="dialog" aria-live="polite">' +
+        '<div class="star" aria-hidden="true">★</div>' +
+        '<h1>Obrigado por participar!</h1>' +
+        '<p>Sua ajuda é muito importante para este trabalho.</p>' +
+        '<button type="button" class="primary">Próximo participante (' + participant + ') ▶</button>' +
+      '</div>';
+    ['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(function (t) {
+      box.addEventListener(t, function (e) { e.stopPropagation(); });
+    });
+    box.querySelector('button').addEventListener('click', function () {
+      box.remove();
+      if (history.replaceState) history.replaceState(null, '', location.pathname + '?pesquisa=' + participant);
+    });
+    document.body.appendChild(box);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildUI);

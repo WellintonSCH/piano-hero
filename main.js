@@ -1818,10 +1818,16 @@
     // 2) A escala subindo e descendo, com as notas caindo como no jogo (cada uma espera).
     { title: 'Agora as outras notas!', text: 'Toque cada nota que cair.',
       notes: [60, 62, 64, 65, 67, 69, 71, 69, 67, 65, 64, 62, 60], hint: true },
-    // 3) Oitavas: todos os Dós acendem; qualquer um vale.
+    // 3) Mais agudo e mais grave: as mesmas notas em outras oitavas, na tecla exata. Só no
+    //    computador (no celular o teclado da introdução tem uma oitava só). O texto vai para o
+    //    centro, porque aqui as notas caem nas pontas do teclado.
+    { title: 'Dá pra tocar mais agudo…', text: '…e mais grave também!', exact: true, center: true, hint: true,
+      desktopOnly: true, notes: [72, 74, 76, 48, 50, 52] },
+    // 4) Oitavas: todos os Dós acendem; qualquer um vale.
     { title: 'O Dó fica antes das 2 pretas', text: 'Ele se repete no teclado todo. Toque um Dó!',
       notes: [60], hint: true, allOctaves: true }
   ];
+  if (PH.notes && PH.notes.COMPACT) LESSON_STEPS = LESSON_STEPS.filter(function (st) { return !st.desktopOnly; });
   var FIND_HINT_AFTER = 5;   // tentativas no passo 1 até o Dó central acender
   var LESSON_TIPS = {
     0: 'O Dó é a tecla branca logo à esquerda do grupo de 2 pretas.',
@@ -1924,7 +1930,8 @@
     if (step.find != null) { onFindNote(played, step.find); return; }
     if (!state.notes.length) return;
     var target = state.notes[0].midi;
-    var ok = pitchClass(played) === pitchClass(target);   // qualquer oitava vale
+    // Qualquer oitava vale, menos no passo que ensina justamente a oitava (exact).
+    var ok = step.exact ? played === target : pitchClass(played) === pitchClass(target);
     holdKey(played, ok);
 
     if (ok) {
@@ -2101,6 +2108,7 @@
     var step = LESSON_STEPS[L.step];
     el.lessonBanner.hidden = false;
     el.lessonBanner.classList.toggle('done', !!done);
+    el.lessonBanner.classList.toggle('center', !!step.center && !done);
     el.lessonStep.textContent = done ? '' : 'Passo ' + (L.step + 1) + ' de ' + LESSON_STEPS.length;
     el.lessonTitle.textContent = done || step.title;
     el.lessonText.textContent = done ? '' : step.text;
