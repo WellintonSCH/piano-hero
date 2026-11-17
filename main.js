@@ -2108,6 +2108,13 @@
       toastMedals(PH.gami.recordTutorial(progress));
       saveProgressState();
     }
+    // Modo pesquisa: o protocolo termina na primeira música guiada. Salva, agradece e já
+    // abre o próximo participante, sem o pesquisador precisar mexer em nada.
+    if (i === GUIDE_STEPS.length - 1 && PH.research) {
+      state.guide = null;
+      PH.research.finishParticipant();
+      return;
+    }
     showScreen('guide');
   }
 

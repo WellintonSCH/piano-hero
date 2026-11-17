@@ -254,7 +254,7 @@
       '<div class="research-thanks-card" role="dialog" aria-live="polite">' +
         '<div class="star" aria-hidden="true">★</div>' +
         '<h1>Obrigado por participar!</h1>' +
-        '<p>Sua ajuda é muito importante para este trabalho.</p>' +
+        '<p>Você terminou o teste. Agora é só responder o questionário.</p>' +
         '<button type="button" class="primary">Próximo participante (' + participant + ') ▶</button>' +
       '</div>';
     ['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(function (t) {
