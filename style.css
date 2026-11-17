@@ -1700,7 +1700,15 @@ html.compact .research-panel { bottom: auto; top: calc(100% + 6px); left: 50%; t
 .research-thanks-card .star { font-size: 64px; line-height: 1; color: var(--gold); }
 .research-thanks-card h1 { font-size: 32px; margin: 12px 0 8px; }
 .research-thanks-card p { font-size: 20px; margin: 0 0 24px; color: var(--muted); }
+.research-thanks-card p { margin-bottom: 16px; }
+.research-qr { display: inline-flex; flex-direction: column; align-items: center; gap: 8px;
+  margin: 0 0 22px; color: var(--muted); font-size: 15px; text-decoration: none; }
+.research-qr img { display: block; width: 220px; height: 220px; background: #fff; padding: 10px; border-radius: 12px; }
 .research-thanks-card button { font-size: 18px; padding: 12px 22px; }
+html.compact .research-thanks-card { padding: 16px; }
+html.compact .research-thanks-card h1 { font-size: 22px; margin: 4px 0; }
+html.compact .research-thanks-card .star { display: none; }
+html.compact .research-qr img { width: 150px; height: 150px; }
 
 /* ---------------- primeiros passos (introdução guiada) ---------------- */
 .lesson-banner {

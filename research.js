@@ -248,6 +248,9 @@
    * Depois de "Encerrar": a tela de agradecimento cobre o jogo (já zerado para o próximo
    * participante) até o pesquisador ou a próxima pessoa tocar em "Começar".
    */
+  // Questionário (Google Forms) do teste; o QR code em assets/ aponta para este mesmo link.
+  var FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfsPj9ym7tG94jaH26IFmmOYsesrY7AnH9F0G82B9TjzCIrEg/viewform';
+
   function showThanks() {
     var box = document.createElement('div');
     box.className = 'research-thanks';
@@ -255,7 +258,11 @@
       '<div class="research-thanks-card" role="dialog" aria-live="polite">' +
         '<div class="star" aria-hidden="true">★</div>' +
         '<h1>Obrigado por participar!</h1>' +
-        '<p>Você terminou o teste. Agora é só responder o questionário.</p>' +
+        '<p>Você terminou o teste. Agora é só responder o questionário:</p>' +
+        '<a class="research-qr" href="' + FORM_URL + '" target="_blank" rel="noopener">' +
+          '<img src="assets/qr-formulario.svg" alt="QR code do questionário" width="220" height="220">' +
+          '<span>Aponte a câmera do celular ou toque aqui</span>' +
+        '</a>' +
         '<button type="button" class="primary">Próximo participante (' + participant + ') ▶</button>' +
       '</div>';
     ['pointerdown', 'touchstart', 'keydown', 'wheel'].forEach(function (t) {
