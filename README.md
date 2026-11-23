@@ -62,4 +62,6 @@ HTML, CSS e JavaScript puros, Web MIDI API, Web Audio API, Canvas 2D e `localSto
 
 ## Licença
 
-Ainda não há uma licença definida para o projeto.
+O código do Piano Hero é distribuído sob a [Licença MIT](LICENSE).
+
+As amostras de piano em `assets/piano/` não estão cobertas por essa licença: derivam do Salamander Grand Piano, de Alexander Holm, sob CC BY 3.0 (ver [`assets/piano/CREDITS.md`](assets/piano/CREDITS.md)).
