@@ -7,7 +7,7 @@ O sistema é uma aplicação estática: HTML, CSS e JavaScript puros, sem framew
 Os scripts são carregados por `<script>` em ordem de dependência, e todos se registram em um único objeto global, `window.PianoHero`:
 
 ```
-latency.js → audio.js → notes.js → songs.js → render.js → input.js → main.js
+latency.js → research.js → audio.js → notes.js → songs.js → render.js → input.js → gamificacao.js → main.js
 ```
 
 ## Fluxo de dados
@@ -15,7 +15,7 @@ latency.js → audio.js → notes.js → songs.js → render.js → input.js →
 ```mermaid
 flowchart LR
     MIDI[Piano MIDI] --> IN[input.js]
-    KB[Teclado do PC] --> IN
+    KB[Teclado do computador] --> IN
     PT[Mouse ou toque] --> IN
     IN -- "notePlayed / noteReleased" --> MAIN[main.js]
     SONGS[songs.js e songs/*.json] --> MAIN
@@ -23,6 +23,8 @@ flowchart LR
     MAIN --> RENDER[render.js]
     MAIN --> LS[(localStorage)]
     AUDIO --> LAT[latency.js]
+    MAIN --> GAM[gamificacao.js]
+    MAIN --> RES[research.js]
 ```
 
 A entrada segue em sentido único. O `input.js` só emite eventos no `window`, e o `main.js` é quem os escuta e decide o que fazer. Assim, o jogo não precisa saber de onde a nota veio, e uma nova fonte de entrada só precisa emitir os mesmos eventos.
@@ -38,6 +40,8 @@ A entrada segue em sentido único. O `input.js` só emite eventos no `window`, e
 | `render.js` | Desenho em Canvas 2D das notas, do teclado e dos efeitos |
 | `main.js` | Estado do jogo, loop principal, pontuação, menus, progresso e relatórios |
 | `latency.js` | Instrumentação de latência e exportação de amostras |
+| `gamificacao.js` | Estrelas, medalhas e sequência de dias, calculadas a partir do progresso salvo |
+| `research.js` | Modo pesquisa: registro das tentativas de cada participante e exportação em CSV ou JSON |
 
 ## Camada de entrada
 
@@ -93,6 +97,9 @@ Os dados ficam em `localStorage`, na chave `pianoHeroProgress`. Nada é enviado 
 | `records` | Recordes de precisão e de velocidade por fase |
 | `last` | Última tentativa por fase |
 | `prefs` | Opções do jogador, incluindo o BPM de cada música |
+| `stars`, `medals`, `streak`, `attempts` | Estrelas por fase, medalhas, sequência de dias e tentativas |
+| `profile` | Nome, cor de destaque e tema |
+| `intro`, `guide` | Conclusão das duas partes da introdução guiada |
 
 ## Medição de latência
 
@@ -118,7 +125,7 @@ O `latency.js` divide o tempo entre a entrada e o som em quatro etapas: entrada 
 
 ## Limitações técnicas
 
-- Não há testes automatizados.
+- Os testes automatizados (`tools/testes/`) rodam no Chrome com um piano MIDI virtual; a entrada com piano físico foi verificada apenas manualmente.
 - O som é disparado no momento da entrada, sem agendamento antecipado.
 - Web MIDI não está disponível no Safari e no iOS.
-- O `main.js` concentra grande parte da lógica, com cerca de 2.200 linhas.
+- O `main.js` concentra grande parte da lógica, com cerca de 2.900 linhas.
