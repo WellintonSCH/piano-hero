@@ -32,7 +32,7 @@ No modo normal, a janela de acerto é de ±0,25 s, e o acerto perfeito fica em �
 ## Recursos de prática
 
 - **Velocidade:** qualquer BPM inteiro, de 20 até o dobro do BPM original. A escolha é lembrada por música e não altera a pontuação.
-- **Repetição de trecho:** o jogador marca início e fim na linha do tempo, e o trecho repete sozinho. A marcação continua válida ao mudar a velocidade.
+- **Repetição de trecho:** abaixo do teclado, botões dividem a música em trechos de 2, 4 ou 8 compassos. O trecho escolhido se repete, com contagem 3-2-1 a cada volta, até o jogador escolher "Música toda". A marcação continua válida ao mudar a velocidade.
 - **Metrônomo:** clique de referência opcional.
 - **Silenciar piano:** desliga só o som do piano do jogo, para praticar em um instrumento externo.
 - **Dica:** indicação visual da tecla esperada, que pode ser desligada.
@@ -51,6 +51,9 @@ No computador, o jogador navega arrastando a pista de notas, usando a barra vert
 - O recorde de precisão guarda a melhor porcentagem.
 - O recorde de velocidade guarda o maior BPM concluído no modo normal com precisão de pelo menos 80%.
 - O progresso e as opções ficam salvos no próprio navegador.
+- Estrelas por fase: de uma a três, conforme a precisão no modo normal (50%, 80% e 95%); concluir no modo espera vale uma estrela.
+- Oito medalhas de progresso, anunciadas no momento em que são conquistadas, e a sequência de dias seguidos de prática.
+- Perfil com nome, cor de destaque e tema escuro ou claro.
 
 ## Relatório da fase
 
@@ -58,8 +61,7 @@ Ao terminar uma música, o jogador vê um resumo e pode abrir os detalhes:
 
 - notas perfeitas, boas e erradas;
 - tendência de adiantar ou atrasar, exceto no modo espera;
-- notas mais erradas;
-- acerto de cada mão.
+- notas mais erradas.
 
 ## Celular
 
@@ -73,27 +75,16 @@ A opção "Medir latência", no grupo Avançado do menu de opções, coleta amos
 
 ## Primeiros passos
 
-Antes da fase 1, o mapa tem a bolha 0, "Primeiros passos": uma introdução guiada ao teclado, sem tempo nem pontuação por ritmo, em cinco passos:
+Antes da fase 1, o mapa tem a fase 0, "Primeiros passos": uma introdução guiada ao teclado, sem tempo, em duas partes.
 
-1. **As teclas pretas:** os grupos de 2 e de 3 pretas e o Dó à esquerda do grupo de 2; todos os Dós do teclado acendem.
-2. **Todos os Dós:** achar o Dó sem a luz de ajuda.
-3. **Dó, Ré, Mi**, com ajuda.
-4. **Fá e Sol:** as cinco notas na posição de cinco dedos, com ajuda.
-5. **Desafio:** dez notas de Dó a Sol fora de ordem, sem ajuda.
+A primeira parte mostra só três oitavas (uma no celular), com o nome das notas nas teclas e o Dó central marcado, e tem cinco passos (quatro no celular):
 
-A nota vale em qualquer oitava. Depois de um erro, o texto diz qual tecla foi tocada e onde fica a certa; depois de dois erros seguidos, a tecla certa acende. No fim, a tela mostra acertos, erros, precisão e tempo e leva à primeira música.
+1. **Ache o Dó central:** o jogador toca qualquer tecla, e o jogo mostra o nome dela e para que lado fica o Dó central.
+2. **Agora as outras notas:** a escala de Dó, subindo e descendo, aceita em qualquer oitava.
+3. **Dá pra tocar mais agudo:** Dó, Ré e Mi uma oitava acima e uma abaixo, na tecla exata (só no computador).
+4. **O Dó fica antes das 2 pretas:** tocar três Dós diferentes (dois no celular).
+5. **Agora explore:** cinco teclas quaisquer.
 
-## Ajustes de 11/11/2026 (depois do teste do autor)
+Depois de dois erros seguidos na mesma nota, a tecla certa acende; no passo 1, depois de cinco tentativas. Uma tecla do piano fora das três oitavas exibidas aparece na tecla de mesmo nome dentro delas.
 
-- Teclado cortado em telas de notebook: o palco agora cabe na altura da janela.
-- Notas rápidas na mesma tecla não se sobrepõem mais; todas as notas dos próximos 2 s aparecem.
-- Repetir trecho: botões por trecho (Música toda, 1, 2, 3…) abaixo do teclado, no lugar da faixa de arrastar.
-- Primeiros passos: só a oitava do meio, com nome das notas nas teclas e o Dó central marcado; notas caem mais devagar.
-- Hot Cross Buns (primeira música) passou de 96 para 72 BPM.
-- Removidos o dedilhado sugerido por nota e a prática de uma mão só (com a outra tocando sozinha): o dedilhado automático não funcionava de forma confiável.
-- Primeiros passos ganhou uma parte 2, a primeira música guiada: Hot Cross Buns em três etapas (ouvir na demonstração, tocar no modo espera, tocar no ritmo a 56 BPM), com um cartão explicando cada etapa e um cartão final com as funções do jogo.
-- Gamificação: estrelas por fase (1 a 3 pela precisão no ritmo; 1 no modo espera), 8 medalhas com aviso na hora, sequência de dias seguidos e total de estrelas no mapa.
-- Perfil: nome, cor de destaque (azul, verde, laranja, rosa) e tema escuro ou claro, com estatísticas e medalhas.
-- Repetir trecho: a cada volta, contagem 3-2-1 e 3 s de entrada; as notas depois do fim do trecho não aparecem.
-- Primeiros passos com 7 passos (inclui Lá e Si e a oitava inteira).
-- Andamentos reduzidos: a maioria das músicas entre 80 e 100 BPM (Brilha Brilha continua a 100 BPM, usada nos testes).
+A segunda parte é a primeira música guiada, "Hot Cross Buns", em três etapas: ouvir na demonstração, tocar no modo espera e tocar no ritmo a 56 BPM. Antes de cada etapa, um cartão explica o que fazer, e o último apresenta as funções do jogo.

@@ -21,6 +21,7 @@ virtual) e registram os resultados.
 | `npm run introducao` | CT17: introdução guiada "Primeiros passos" no computador e no celular emulado (erro, Dó em várias oitavas, luz após dois erros, tela final) |
 | `npm run fim` | CT18: fim da demonstração volta à tela da música com o Modo espera em destaque; depois do Modo espera, "Voltar à música" e "Agora no ritmo" |
 | `npm run render` | Custo do desenho por quadro, com CPU normal e 4x mais lenta |
+| `npm run bateria` | Bateria de regressão: 26 verificações (B01 a B26) que percorrem as funções do jogo como um usuário faria |
 
 `?debug` na URL expõe o estado do jogo (`PianoHero.debugState`) para os testes; sem
 ele, nada muda no jogo.

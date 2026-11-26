@@ -2,7 +2,7 @@
 
 ## Repertório
 
-São 21 músicas: 15 escritas à mão em `songs.js` e 6 importadas em `songs/`.
+São 15 músicas, escritas à mão em `songs.js`. Não há músicas importadas no momento (veja abaixo).
 
 ### Embutidas (`songs.js`)
 
